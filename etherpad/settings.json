@@ -160,8 +160,8 @@
    "ip": "${IP:0.0.0.0}",
   "port": "${PORT:9010}",
    */
-  "ip": "${IP:0.0.0.0}/etherpad",
-  "port": "80",
+  "ip": "${IP:0.0.0.0}",
+  "port": "${PORT:9010}",
   /*
    * Option to hide/show the settings.json in admin page.
    *
