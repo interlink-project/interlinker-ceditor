@@ -1,6 +1,6 @@
 version: "3.3"
 services:
-  etherpadwrapper:
+  etherwrapper:
     volumes:
       - ./wrapper:/app
     build:
@@ -10,10 +10,10 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=traefik-public
-      - traefik.http.routers.${STACK_NAME?Variable not set}-etherpadwrapper-http.rule=PathPrefix(`/etherpadwrapper`)
-      - traefik.http.services.${STACK_NAME?Variable not set}-etherpadwrapper.loadbalancer.server.port=${PORT}
-      - traefik.http.routers.${STACK_NAME?Variable not set}-etherpadwrapper-http.middlewares=etherpadwrapper-stripprefix
-      - traefik.http.middlewares.etherpadwrapper-stripprefix.stripprefix.prefixes=/etherpadwrapper
+      - traefik.http.routers.${STACK_NAME?Variable not set}-etherwrapper-http.rule=PathPrefix(`/etherwrapper`)
+      - traefik.http.services.${STACK_NAME?Variable not set}-etherwrapper.loadbalancer.server.port=${WRAPPER_PORT}
+      - traefik.http.routers.${STACK_NAME?Variable not set}-etherwrapper-http.middlewares=etherwrapper-stripprefix
+      - traefik.http.middlewares.etherwrapper-stripprefix.stripprefix.prefixes=/etherwrapper
 
   etherpad:
     build:
@@ -23,6 +23,6 @@ services:
       - traefik.enable=true
       - traefik.docker.network=traefik-public
       - traefik.http.routers.${STACK_NAME?Variable not set}-etherpad-http.rule=PathPrefix(`/etherpad`)
-      - traefik.http.services.${STACK_NAME?Variable not set}-etherpad.loadbalancer.server.port=${PORT}
+      - traefik.http.services.${STACK_NAME?Variable not set}-etherpad.loadbalancer.server.port=${ETHERPAD_PORT}
       - traefik.http.routers.${STACK_NAME?Variable not set}-etherpad-http.middlewares=etherpad-stripprefix
       - traefik.http.middlewares.etherpad-stripprefix.stripprefix.prefixes=/etherpad

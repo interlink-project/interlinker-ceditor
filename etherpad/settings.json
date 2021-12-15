@@ -155,9 +155,13 @@
    * EXAMPLE USING UNIX SOCKET:
    *    "ip": "",                             // <-- has to be an empty string
    *    "port" : "/somepath/etherpad.socket", // <-- path to a Unix socket
-   */
-  "ip": "${IP:0.0.0.0}",
+
+   Lo que estaba antes
+   "ip": "${IP:0.0.0.0}",
   "port": "${PORT:9010}",
+   */
+  "ip": "${IP:0.0.0.0}/etherpad",
+  "port": "80",
   /*
    * Option to hide/show the settings.json in admin page.
    *

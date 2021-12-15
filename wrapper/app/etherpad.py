@@ -1,6 +1,8 @@
 from app.config import settings
 
 base_url = "http://proxy/etherpad"
+domain = f"http://localhost"
+listAllPads = f"{base_url}/api/1/listAllPads?apikey={settings.ETHERPAD_API_KEY}"
 
 
 def createAuthorIfNotExistsFor(authorName, authorMapper):
@@ -20,7 +22,7 @@ def createSession(groupID, authorID, validUntil=2022201246):
 
 
 def iframeUrl(sessionID, groupID, padName):
-    return f"http://localhost/etherpad/auth_session?sessionID={sessionID}&groupID={groupID}&padName={padName}"
+    return f"{domain}/etherpad/auth_session?sessionID={sessionID}&groupID={groupID}&padName={padName}"
 
 
 def getSessionInfo(sessionID):
@@ -38,6 +40,9 @@ def listSessionsOfAuthor(authorID):
 def getHTML(padID):
     return f"{base_url}/api/1/getHTML?apikey={settings.ETHERPAD_API_KEY}&padID={padID}"
 
+def setHTML(padID, html):
+    return f"{base_url}/api/1/setHTML?apikey={settings.ETHERPAD_API_KEY}&padID={padID}&html={html}"
+
 
 def getRevisionsCount(padID):
     return f"{base_url}/api/1/getRevisionsCount?apikey={settings.ETHERPAD_API_KEY}&padID={padID}"
@@ -49,6 +54,3 @@ def padUsers(padID):
 
 def getLastEdited(padID):
     return f"{base_url}/api/1/getLastEdited?apikey={settings.ETHERPAD_API_KEY}&padID={padID}"
-
-def listAllPads():
-    return f"{base_url}/api/1/listAllPads?apikey={settings.ETHERPAD_API_KEY}"

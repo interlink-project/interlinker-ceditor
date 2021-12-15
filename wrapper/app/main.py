@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request, HTTPException, status, Body
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.encoders import jsonable_encoder
 from app.config import settings
 from starlette.middleware.cors import CORSMiddleware
@@ -13,10 +13,10 @@ import json
 import random
 import string
 import requests
+import uuid
 
 
-
-ROOT_PATH = "/etherpadwrapper"
+ROOT_PATH = "/etherwrapper"
 
 app = FastAPI(
     title="Etherpad API Wrapper", openapi_url=f"/openapi.json", docs_url="/docs", root_path=ROOT_PATH
@@ -52,26 +52,37 @@ def healthcheck():
 
 apirouter = APIRouter()
 
-@apirouter.post("/assets/", response_description="Add new asset")
-async def create_asset(asset_in: AssetCreate = Body(...)):
-   
+async def create_pad(name):
     groupMapper = ''.join(random.choice(string.ascii_lowercase) for i in range(10))
     response = requests.get(createGroupIfNotExistsFor(groupMapper=groupMapper))
-    print(createGroupIfNotExistsFor(groupMapper=groupMapper))
     data = json.loads(response._content)
     print(data)
     groupID = data["data"]["groupID"]
-    response = requests.get(createGroupPad(groupID=groupID, padName=asset_in.name))
+    response = requests.get(createGroupPad(groupID=groupID, padName=name))
     data = json.loads(response._content)
     print(data)
     padID = data["data"]["padID"]
-    response = requests.get(getHTML(padID=padID))
-    data = json.loads(response._content)
-    print(data)
 
-    asset = jsonable_encoder(data)
+    asset = {
+        "_id": uuid.uuid4().hex,
+        "groupMapper": groupMapper,
+        "name": name,
+        "groupID": groupID,
+        "padID": padID
+    }
+    asset = jsonable_encoder(asset)
     new_asset = await db["assets"].insert_one(asset)
-    created_asset = await db["assets"].find_one({"_id": new_asset.inserted_id})
+    return await db["assets"].find_one({"_id": new_asset.inserted_id})
+
+@apirouter.get("/assets/real", response_description="Get real pads")
+async def get_real_assets():
+    response = requests.get(listAllPads)
+    data = json.loads(response._content)
+    return JSONResponse(status_code=status.HTTP_200_OK, content=data)
+
+@apirouter.post("/assets/", response_description="Add new asset")
+async def create_asset(asset_in: AssetCreate = Body(...)):
+    created_asset = await create_pad(asset_in.name)
     return JSONResponse(status_code=status.HTTP_201_CREATED, content=created_asset)
 
 
@@ -97,12 +108,17 @@ async def show_asset(id: str):
 )
 async def clone_asset(id: str):
     if (asset := await db["assets"].find_one({"_id": id})) is not None:
-        file = copy_file("newTitle", id)
-        file["_id"] = file["id"]
-        del file["id"]
-        asset = jsonable_encoder(file)
-        new_asset = await db["assets"].insert_one(asset)
-        created_asset = await db["assets"].find_one({"_id": new_asset.inserted_id})
+        original_name = asset["name"]
+        created_asset = await create_pad(f"Copy of {original_name}")
+        response = requests.get(getHTML(padID=asset["padID"]))
+        data = json.loads(response._content)
+        html = data["data"]["html"]
+        
+        print(f"Setting html {html}")
+        requests.get(setHTML(padID=created_asset["padID"], html=html))
+        # response = requests.get(getHTML(padID=created_asset["padID"]))
+        # data = json.loads(response._content)
+        # print(data)
         return JSONResponse(status_code=status.HTTP_201_CREATED, content=created_asset)
 
     raise HTTPException(status_code=404, detail="Asset {id} not found")
@@ -126,20 +142,26 @@ templates = Jinja2Templates(directory="templates")
 )
 async def gui_asset(request: Request, id: str):
     if (asset := await db["assets"].find_one({"_id": id})) is not None:
-        response = requests.get("/auth/api/v1/users/me")
+        response = requests.get("http://proxy/auth/api/v1/users/me", headers=request.headers)
         current_user = json.loads(response._content)
-        email = current_user["email"] if current_user else "AnonymousUser"
 
+        try:
+            email = current_user["email"]
+        except:
+            print(response)
+            return RedirectResponse(f"/auth/login?redirect_on_callback=/etherwrapper/api/v1/assets/{id}/gui")
+            # raise HTTPException(status_code=401, detail="You are not logged in")
+            # email = "AnonymousUser"
         response = requests.get(createAuthorIfNotExistsFor(
             authorName=email, authorMapper=email))
         data = json.loads(response._content)
         authorID = data["data"]["authorID"]
-        response = requests.get(createSession(groupID=asset.groupID,
+        response = requests.get(createSession(groupID=asset["groupID"],
                                 authorID=authorID, validUntil=2022201246))
         data = json.loads(response._content)
         sessionID = data["data"]["sessionID"]
 
-        url = iframeUrl(sessionID, asset.groupID, asset.name)
+        url = iframeUrl(sessionID, asset["groupID"], asset["name"])
         response = templates.TemplateResponse(
             "index.html", {"request": request, "url": url})
         return response
