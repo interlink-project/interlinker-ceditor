@@ -1,0 +1,78 @@
+version: "3.3"
+services:
+  etherpad:
+    image: 'etherpad:${TAG-latest}'
+    build:
+      context: ./etherpad
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      - TITLE=${ETHERPAD_TITLE}
+      - DEFAULT_PAD_TEXT=${ETHERPAD_DEFAULT_PAD_TEXT}
+      - ADMIN_PASSWORD=${ETHERPAD_ADMIN_PASSWORD}
+      - ADMIN_USER=${ETHERPAD_ADMIN_USER}
+      - REQUIRE_SESSION=${ETHERPAD_REQUIRE_SESSION}
+      - EDIT_ONLY=${ETHERPAD_EDIT_ONLY}
+    depends_on:
+      mongodb:
+         condition: service_healthy
+    deploy:
+      labels:
+        - traefik.enable=true
+        - traefik.docker.network=traefik-public
+        - traefik.http.routers.${STACK_NAME?Variable not set}-etherpad-http.rule=PathPrefix(`/etherpad`)
+        - traefik.http.routers.${STACK_NAME?Variable not set}-etherpad-http.middlewares=etherpad-stripprefix
+        - traefik.http.middlewares.etherpad-stripprefix.stripprefix.prefixes=/etherpad
+        - traefik.http.services.${STACK_NAME?Variable not set}-etherpad.loadbalancer.server.port=${PORT}
+
+    networks:
+      - traefik-public
+      - default
+      
+  etherpadwrapper:
+    image: 'etherpadwrapper:${TAG-latest}'
+    env_file:
+      - .env
+    environment:
+      - SERVER_NAME=${DOMAIN?Variable not set}
+      - SERVER_HOST=https://${DOMAIN?Variable not set}
+      # Allow explicit env var override for tests
+    build:
+      context: ./wrapper
+      args:
+        INSTALL_DEV: ${INSTALL_DEV-false}
+    depends_on:
+      - etherpad
+    deploy:
+      labels:
+        - traefik.enable=true
+        - traefik.docker.network=traefik-public
+        - traefik.http.routers.${STACK_NAME?Variable not set}-etherpadwrapper-http.rule=PathPrefix(`/etherpadwrapper`)
+        - traefik.http.routers.${STACK_NAME?Variable not set}-etherpadwrapper-http.middlewares=etherpadwrapper-stripprefix
+        - traefik.http.middlewares.etherpadwrapper-stripprefix.stripprefix.prefixes=/etherpadwrapper
+        - traefik.http.services.${STACK_NAME?Variable not set}-etherpadwrapper.loadbalancer.server.port=${PORT}
+    networks:
+      - traefik-public
+      - default
+
+  mongodb:
+      image: bitnami/mongodb:latest
+      container_name: etherpadwrapper-mongodb
+      environment:
+        - MONGODB_USERNAME
+        - MONGODB_PASSWORD
+        - MONGODB_DATABASE
+        - MONGODB_ROOT_PASSWORD
+      networks:
+        - default
+      healthcheck:
+        test: echo 'db.runCommand({serverStatus:1}).ok' | mongo admin -u root -p $MONGODB_ROOT_PASSWORD --quiet | grep 1
+        interval: 10s
+        timeout: 10s
+        retries: 3
+        start_period: 20s
+
+networks:
+  traefik-public:
+    external: true
