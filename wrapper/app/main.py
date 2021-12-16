@@ -34,23 +34,56 @@ if settings.BACKEND_CORS_ORIGINS:
 
 """
 from fastapi_utils.tasks import repeat_every
-@apirouter.on_event("startup")
+@app.on_event("startup")
 @repeat_every(seconds=60 * 60)  # 1 hour
 def repetitive_task() -> None:
     pass
     # clean(db)
 """
 
+mainrouter = APIRouter()
 
-@app.get("/")
+@mainrouter.get("/")
 def main():
     return RedirectResponse(url=f"{ROOT_PATH}/docs")
 
-@app.get("/healthcheck")
+@mainrouter.get("/healthcheck")
 def healthcheck():
     return True
 
-apirouter = APIRouter()
+specificrouter = APIRouter()
+
+@specificrouter.get("/pads", response_description="Get real pads")
+async def get_real_pads():
+    response = requests.get(listAllPads)
+    data = json.loads(response._content)
+    data = data["data"]["padIDs"]
+    for i in data:
+        print(i)
+        requests.get(deletePad(i))
+    return JSONResponse(status_code=status.HTTP_200_OK, content=data)
+
+@specificrouter.get("/pads/delete", response_description="Delete unused pads")
+async def delete_unused_pads():
+    assets = await db["assets"].find().to_list(1000)
+    response = requests.get(listAllPads)
+    data = json.loads(response._content)
+    data = data["data"]["padIDs"]
+    matches = [asset["_id"] for asset in assets if asset["padID"] not in data]
+    for id in matches:
+        db["assets"].delete_one({"_id": id})
+    return JSONResponse(status_code=status.HTTP_200_OK, content=data)
+
+@specificrouter.get("/pads/clean", response_description="Delete all pads")
+async def delete_all_pads():
+    assets = await db["assets"].find().to_list(1000)
+    for asset in assets:
+        requests.get(deletePad(asset["padID"]))
+        db["assets"].delete_one({"_id": asset["_id"]})
+
+    return JSONResponse(status_code=status.HTTP_200_OK)
+
+defaultrouter = APIRouter()
 
 async def create_pad(name):
     groupMapper = ''.join(random.choice(string.ascii_lowercase) for i in range(10))
@@ -74,19 +107,14 @@ async def create_pad(name):
     new_asset = await db["assets"].insert_one(asset)
     return await db["assets"].find_one({"_id": new_asset.inserted_id})
 
-@apirouter.get("/assets/real", response_description="Get real pads")
-async def get_real_assets():
-    response = requests.get(listAllPads)
-    data = json.loads(response._content)
-    return JSONResponse(status_code=status.HTTP_200_OK, content=data)
 
-@apirouter.post("/assets/", response_description="Add new asset")
+@defaultrouter.post("/assets/", response_description="Add new asset")
 async def create_asset(asset_in: AssetCreate = Body(...)):
     created_asset = await create_pad(asset_in.name)
     return JSONResponse(status_code=status.HTTP_201_CREATED, content=created_asset)
 
 
-@apirouter.get(
+@defaultrouter.get(
     "/assets/", response_description="List all assets"
 )
 async def list_assets():
@@ -94,7 +122,7 @@ async def list_assets():
     return JSONResponse(status_code=status.HTTP_200_OK, content=assets)
 
 
-@apirouter.get(
+@defaultrouter.get(
     "/assets/{id}", response_description="Get a single asset"
 )
 async def show_asset(id: str):
@@ -103,7 +131,7 @@ async def show_asset(id: str):
 
     raise HTTPException(status_code=404, detail="Asset {id} not found")
 
-@apirouter.post(
+@defaultrouter.post(
     "/assets/{id}/clone", response_description="Clone specific asset"
 )
 async def clone_asset(id: str):
@@ -124,12 +152,16 @@ async def clone_asset(id: str):
     raise HTTPException(status_code=404, detail="Asset {id} not found")
 
 
-@apirouter.delete("/assets/{id}", response_description="Delete a asset")
+@defaultrouter.delete("/assets/{id}", response_description="Delete a asset")
 async def delete_asset(id: str):
-    delete_result = await db["assets"].delete_one({"_id": id})
-
-    if delete_result.deleted_count == 1:
-        return JSONResponse(status_code=status.HTTP_204_NO_CONTENT)
+    if (asset := await db["assets"].find_one({"_id": id})) is not None:
+        response = requests.get(deletePad(padID=asset["padID"]))
+        data = json.loads(response._content)
+        print(data)
+        delete_result = await db["assets"].delete_one({"_id": id})
+        if delete_result.deleted_count == 1:
+            return JSONResponse(status_code=status.HTTP_204_NO_CONTENT)
+        return HTTPException(status_code=503, detail="Error while deleting")
 
     raise HTTPException(status_code=404, detail="Asset {id} not found")
 
@@ -137,7 +169,7 @@ async def delete_asset(id: str):
 from fastapi.templating import Jinja2Templates
 templates = Jinja2Templates(directory="templates")
 
-@apirouter.get(
+@defaultrouter.get(
     "/assets/{id}/gui", response_description="GUI for specific asset"
 )
 async def gui_asset(request: Request, id: str):
@@ -169,4 +201,6 @@ async def gui_asset(request: Request, id: str):
     raise HTTPException(status_code=404, detail="Asset {id} not found")
 
 
-app.include_router(apirouter, prefix=settings.API_V1_STR)
+app.include_router(defaultrouter, prefix=settings.API_V1_STR, tags=["default"])
+app.include_router(specificrouter, prefix=settings.API_V1_STR, tags=["specific"])
+app.include_router(mainrouter, tags=["main"])

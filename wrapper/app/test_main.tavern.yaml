@@ -1,0 +1,32 @@
+test_name: Testing
+
+stages:
+  - name: Check healthcheck
+    request:
+      url: http://localhost:{tavern.env_vars.PORT}/healthcheck
+      method: GET
+    response:
+      status_code: 200
+      json:
+        true
+
+  - name: Create asset
+    request:
+      url: http://localhost:{tavern.env_vars.PORT}/api/v1/assets/
+      method: POST
+      json:
+        name: Testing pad
+    
+    response:
+      status_code: 201
+      save:
+       json:
+        created_id: _id
+
+  - name: Delete asset
+    request:
+      url: http://localhost:{tavern.env_vars.PORT}/api/v1/assets/{created_id}
+      method: DELETE
+    
+    response:
+      status_code: 204
