@@ -59,7 +59,9 @@ USER etherpad
 WORKDIR "${EP_DIR}"
 
 COPY --chown=etherpad:etherpad ./ ./
-RUN echo "ssdfgkkl23489klavnjsdajhf324nnasdasdash4w2" > APIKEY.txt
+ARG ETHERPAD_API_KEY=nofunciona
+
+RUN echo "${ETHERPAD_API_KEY}" > APIKEY.txt
 
 # Plugins must be installed before installing Etherpad's dependencies, otherwise
 # npm will try to hoist common dependencies by removing them from
@@ -80,7 +82,7 @@ COPY --chown=etherpad:etherpad ./settings.json "${EP_DIR}"/settings.json
 # Fix group permissions
 RUN chmod -R g=u .
 
-HEALTHCHECK --interval=20s --timeout=3s CMD curl -f http://localhost:9010 || exit 1
+HEALTHCHECK --interval=20s --timeout=3s CMD curl -f http://localhost:80 || exit 1
 
-EXPOSE 9010
+EXPOSE 80
 CMD ["node", "src/node/server.js"]

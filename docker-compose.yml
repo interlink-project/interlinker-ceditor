@@ -1,10 +1,13 @@
 version: "3.3"
 services:
   etherpad:
+    container_name: etherpad-production
     image: 'etherpad:${TAG-latest}'
     build:
       context: ./etherpad
       dockerfile: Dockerfile
+      args:
+        - ETHERPAD_API_KEY=${ETHERPAD_API_KEY}
     env_file:
       - .env
     environment:
@@ -32,6 +35,7 @@ services:
       - default
       
   etherwrapper:
+    container_name: etherwrapper-production
     image: 'etherwrapper:${TAG-latest}'
     env_file:
       - .env

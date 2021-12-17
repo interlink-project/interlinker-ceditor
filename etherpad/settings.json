@@ -49,14 +49,14 @@
  *     specify "null" as the default value.
  *
  * EXAMPLE:
- *    "port":     "${PORT:9010}"
+ *    "port":     "${PORT:80}"
  *    "minify":   "${MINIFY}"
  *    "skinName": "${SKIN_NAME:colibris}"
  *
  * Would read the configuration values for those items from the environment
  * variables PORT, MINIFY and SKIN_NAME.
  *
- * If PORT and SKIN_NAME variables were not defined, the default values 9010 and
+ * If PORT and SKIN_NAME variables were not defined, the default values 80 and
  * "colibris" would be used.
  * The configuration value "minify", on the other hand, does not have a
  * designated default value. Thus, if the environment variable MINIFY were
@@ -65,18 +65,18 @@
  * REMARKS:
  * 1) please note that variable substitution always needs to be quoted.
  *
- *    "port":     9010,            <-- Literal values. When not using
+ *    "port":     80,            <-- Literal values. When not using
  *    "minify":   false                substitution, only strings must be
  *    "skinName": "colibris"           quoted. Booleans and numbers must not.
  *
- *    "port":     "${PORT:9010}"   <-- CORRECT: if you want to use a variable
+ *    "port":     "${PORT:80}"   <-- CORRECT: if you want to use a variable
  *    "minify":   "${MINIFY:true}"     substitution, put quotes around its name,
  *    "skinName": "${SKIN_NAME}"       even if the required value is a number or
  *                                     a boolean.
  *                                     Etherpad will take care of rewriting it
  *                                     to the proper type if necessary.
  *
- *    "port":     ${PORT:9010}     <-- ERROR: this is not valid json. Quotes
+ *    "port":     ${PORT:80}     <-- ERROR: this is not valid json. Quotes
  *    "minify":   ${MINIFY}            around variable names are missing.
  *    "skinName": ${SKIN_NAME}
  *
@@ -158,10 +158,10 @@
 
    Lo que estaba antes
    "ip": "${IP:0.0.0.0}",
-  "port": "${PORT:9010}",
+  "port": "${PORT:80}",
    */
   "ip": "${IP:0.0.0.0}",
-  "port": "${PORT:9010}",
+  "port": "${PORT:80}",
   /*
    * Option to hide/show the settings.json in admin page.
    *

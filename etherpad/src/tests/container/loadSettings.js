@@ -25,7 +25,7 @@ function loadSettings() {
 
       // custom settings for running in a container
       settings.ip = 'localhost';
-      settings.port = '9010';
+      settings.port = '80';
 
       return settings;
     }

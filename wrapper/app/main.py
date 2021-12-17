@@ -1,25 +1,36 @@
-from fastapi import FastAPI, Request, HTTPException, status, Body
-from fastapi.responses import JSONResponse, RedirectResponse
-from fastapi.encoders import jsonable_encoder
-from app.config import settings
-from starlette.middleware.cors import CORSMiddleware
-from app.database import db
-from fastapi.responses import RedirectResponse
-import os
-from fastapi import File, UploadFile, APIRouter
-from app.etherpad import *
-from app.model import AssetCreate
 import json
+import os
 import random
 import string
-import requests
 import uuid
 
+import requests
+from fastapi import (
+    APIRouter,
+    Body,
+    FastAPI,
+    File,
+    HTTPException,
+    Request,
+    UploadFile,
+    status,
+)
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.templating import Jinja2Templates
+from starlette.middleware.cors import CORSMiddleware
 
-ROOT_PATH = "/etherwrapper"
+from app.config import settings
+from app.database import db
+from app.etherpad import *
+from app.model import AssetCreate
+
+templates = Jinja2Templates(directory="templates")
+
+BASE_PATH = os.getenv("BASE_PATH", "")
 
 app = FastAPI(
-    title="Etherpad API Wrapper", openapi_url=f"/openapi.json", docs_url="/docs", root_path=ROOT_PATH
+    title="Etherpad API Wrapper", openapi_url=f"/openapi.json", docs_url="/docs", root_path=BASE_PATH
 )
 
 # Set all CORS enabled origins
@@ -27,7 +38,6 @@ if settings.BACKEND_CORS_ORIGINS:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
-        # localhost only
         allow_methods=["*"],
         allow_headers=["*"],
     )
@@ -43,15 +53,19 @@ def repetitive_task() -> None:
 
 mainrouter = APIRouter()
 
+
 @mainrouter.get("/")
 def main():
-    return RedirectResponse(url=f"{ROOT_PATH}/docs")
+    return RedirectResponse(url=f"{BASE_PATH}/docs")
+
 
 @mainrouter.get("/healthcheck")
 def healthcheck():
     return True
 
+
 specificrouter = APIRouter()
+
 
 @specificrouter.get("/pads", response_description="Get real pads")
 async def get_real_pads():
@@ -62,6 +76,7 @@ async def get_real_pads():
         print(i)
         requests.get(deletePad(i))
     return JSONResponse(status_code=status.HTTP_200_OK, content=data)
+
 
 @specificrouter.get("/pads/delete", response_description="Delete unused pads")
 async def delete_unused_pads():
@@ -74,6 +89,7 @@ async def delete_unused_pads():
         db["assets"].delete_one({"_id": id})
     return JSONResponse(status_code=status.HTTP_200_OK, content=data)
 
+
 @specificrouter.get("/pads/clean", response_description="Delete all pads")
 async def delete_all_pads():
     assets = await db["assets"].find().to_list(1000)
@@ -84,6 +100,7 @@ async def delete_all_pads():
     return JSONResponse(status_code=status.HTTP_200_OK)
 
 defaultrouter = APIRouter()
+
 
 async def create_pad(name):
     groupMapper = ''.join(random.choice(string.ascii_lowercase) for i in range(10))
@@ -127,9 +144,10 @@ async def list_assets():
 )
 async def show_asset(id: str):
     if (asset := await db["assets"].find_one({"_id": id})) is not None:
-            return JSONResponse(status_code=status.HTTP_200_OK, content=asset)
+        return JSONResponse(status_code=status.HTTP_200_OK, content=asset)
 
     raise HTTPException(status_code=404, detail="Asset {id} not found")
+
 
 @defaultrouter.post(
     "/assets/{id}/clone", response_description="Clone specific asset"
@@ -141,7 +159,7 @@ async def clone_asset(id: str):
         response = requests.get(getHTML(padID=asset["padID"]))
         data = json.loads(response._content)
         html = data["data"]["html"]
-        
+
         print(f"Setting html {html}")
         requests.get(setHTML(padID=created_asset["padID"], html=html))
         # response = requests.get(getHTML(padID=created_asset["padID"]))
@@ -166,24 +184,24 @@ async def delete_asset(id: str):
     raise HTTPException(status_code=404, detail="Asset {id} not found")
 
 
-from fastapi.templating import Jinja2Templates
-templates = Jinja2Templates(directory="templates")
-
 @defaultrouter.get(
     "/assets/{id}/gui", response_description="GUI for specific asset"
 )
 async def gui_asset(request: Request, id: str):
     if (asset := await db["assets"].find_one({"_id": id})) is not None:
-        response = requests.get("http://proxy/auth/api/v1/users/me", headers=request.headers)
+        email = "j.badiola@deusto.es"
+        """
+        response = requests.get(
+            "http://proxy/auth/api/v1/users/me", headers=request.headers)
         current_user = json.loads(response._content)
 
         try:
             email = current_user["email"]
         except:
-            print(response)
             return RedirectResponse(f"/auth/login?redirect_on_callback=/etherwrapper/api/v1/assets/{id}/gui")
             # raise HTTPException(status_code=401, detail="You are not logged in")
             # email = "AnonymousUser"
+        """
         response = requests.get(createAuthorIfNotExistsFor(
             authorName=email, authorMapper=email))
         data = json.loads(response._content)
@@ -201,6 +219,6 @@ async def gui_asset(request: Request, id: str):
     raise HTTPException(status_code=404, detail="Asset {id} not found")
 
 
+app.include_router(mainrouter, tags=["main"])
 app.include_router(defaultrouter, prefix=settings.API_V1_STR, tags=["default"])
 app.include_router(specificrouter, prefix=settings.API_V1_STR, tags=["specific"])
-app.include_router(mainrouter, tags=["main"])

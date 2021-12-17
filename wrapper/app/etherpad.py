@@ -1,9 +1,21 @@
 from app.config import settings
+import os
 
-base_url = "http://proxy/etherpad"
-domain = f"http://localhost"
+etherpad_host = os.getenv("ETHERPAD_HOST")
+base_url = f"http://{etherpad_host}"
+
+domain = os.getenv("DOMAIN", "localhost")
+# if base path exists, means that is behing proxy
+base_path = os.getenv("BASE_PATH")
+if len(base_path) > 0:
+    # Integrated
+    domain_url = f"http://{domain}{base_path}"
+else:
+    # Solo development
+    port = os.getenv("ETHERPAD_EXTERNAL_PORT", "9010")
+    domain_url = f"http://{domain}:{port}"
+
 listAllPads = f"{base_url}/api/1.2.15/listAllPads?apikey={settings.ETHERPAD_API_KEY}"
-
 
 def createAuthorIfNotExistsFor(authorName, authorMapper):
     return f"{base_url}/api/1.2.15/createAuthorIfNotExistsFor?apikey={settings.ETHERPAD_API_KEY}&name={authorName}&authorMapper={authorMapper}"
@@ -25,7 +37,7 @@ def createSession(groupID, authorID, validUntil=2022201246):
 
 
 def iframeUrl(sessionID, groupID, padName):
-    return f"{domain}/etherpad/auth_session?sessionID={sessionID}&groupID={groupID}&padName={padName}"
+    return f"{domain_url}/auth_session?sessionID={sessionID}&groupID={groupID}&padName={padName}"
 
 
 def getSessionInfo(sessionID):

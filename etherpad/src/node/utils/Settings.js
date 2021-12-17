@@ -75,7 +75,7 @@ exports.ip = '0.0.0.0';
 /**
  * The Port ep-lite should listen to
  */
-exports.port = process.env.PORT || 9010;
+exports.port = process.env.PORT || 80;
 
 /**
  * Should we suppress Error messages from being in Pad Contents
@@ -492,7 +492,7 @@ const storeSettings = (settingsObj) => {
  * them to appropriate JS types. Otherwise return stringValue as-is.
  *
  * Please note that this function is used for converting types for default
- * values in the settings file (for example: "${PORT:9010}"), and that there is
+ * values in the settings file (for example: "${PORT:80}"), and that there is
  * no coercition for "null" values.
  *
  * If the user wants a variable to be null by default, he'll have to use the
@@ -541,7 +541,7 @@ const coerceValue = (stringValue) => {
  * | settings.json             | ENV_VAR       | guration value   |
  * |---------------------------|---------------|------------------|
  * | "${ENV_VAR}"              | "some_string" | "some_string"    |
- * | "${ENV_VAR}"              | "9010"        | 9010             |
+ * | "${ENV_VAR}"              | "80"        | 80             |
  * | "${ENV_VAR}"              | undefined     | null             |
  * | "${ENV_VAR:some_default}" | "some_string" | "some_string"    |
  * | "${ENV_VAR:some_default}" | undefined     | "some_default"   |
