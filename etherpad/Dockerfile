@@ -82,7 +82,7 @@ COPY --chown=etherpad:etherpad ./settings.json "${EP_DIR}"/settings.json
 # Fix group permissions
 RUN chmod -R g=u .
 
-HEALTHCHECK --interval=20s --timeout=3s CMD curl -f http://localhost:80 || exit 1
+HEALTHCHECK --interval=20s --timeout=3s CMD curl -f http://localhost:9001 || exit 1
 
-EXPOSE 80
+EXPOSE 9001
 CMD ["node", "src/node/server.js"]

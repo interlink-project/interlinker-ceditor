@@ -1,10 +1,38 @@
 version: "3.3"
 services:
-  etherpad:
-    container_name: etherpad-production
-    image: 'etherpad:${TAG-latest}'
+  etherwrapper:
+    container_name: ${WRAPPER_HOST}-production
+    image: '${WRAPPER_HOST}:${TAG-latest}'
+    env_file:
+      - .env
+    environment:
+      - SERVER_NAME=${DOMAIN?Variable not set}
+      - SERVER_HOST=https://${DOMAIN?Variable not set}
+      - PORT=${WRAPPER_PORT}
+      # Allow explicit env var override for tests
     build:
-      context: ./etherpad
+      context: ./${WRAPPER_HOST}
+      args:
+        INSTALL_DEV: ${INSTALL_DEV-false}
+    depends_on:
+      - ${ETHERPAD_HOST}
+    deploy:
+      labels:
+        - traefik.enable=true
+        - traefik.docker.network=traefik-public
+        - traefik.http.routers.${STACK_NAME?Variable not set}-${WRAPPER_HOST}-http.rule=PathPrefix(`/${WRAPPER_HOST}`)
+        - traefik.http.routers.${STACK_NAME?Variable not set}-${WRAPPER_HOST}-http.middlewares=${WRAPPER_HOST}-stripprefix
+        - traefik.http.middlewares.${WRAPPER_HOST}-stripprefix.stripprefix.prefixes=/${WRAPPER_HOST}
+        - traefik.http.services.${STACK_NAME?Variable not set}-${WRAPPER_HOST}.loadbalancer.server.port=${WRAPPER_PORT}
+    networks:
+      - traefik-public
+      - default
+
+  etherpad:
+    container_name: ${ETHERPAD_HOST}-production
+    image: '${ETHERPAD_HOST}:${TAG-latest}'
+    build:
+      context: ./${ETHERPAD_HOST}
       dockerfile: Dockerfile
       args:
         - ETHERPAD_API_KEY=${ETHERPAD_API_KEY}
@@ -25,46 +53,18 @@ services:
       labels:
         - traefik.enable=true
         - traefik.docker.network=traefik-public
-        - traefik.http.routers.${STACK_NAME?Variable not set}-etherpad-http.rule=PathPrefix(`/etherpad`)
-        - traefik.http.routers.${STACK_NAME?Variable not set}-etherpad-http.middlewares=etherpad-stripprefix
-        - traefik.http.middlewares.etherpad-stripprefix.stripprefix.prefixes=/etherpad
-        - traefik.http.services.${STACK_NAME?Variable not set}-etherpad.loadbalancer.server.port=${ETHERPAD_PORT}
+        - traefik.http.routers.${STACK_NAME?Variable not set}-${ETHERPAD_HOST}-http.rule=PathPrefix(`/${ETHERPAD_HOST}`)
+        - traefik.http.routers.${STACK_NAME?Variable not set}-${ETHERPAD_HOST}-http.middlewares=${ETHERPAD_HOST}-stripprefix
+        - traefik.http.middlewares.${ETHERPAD_HOST}-stripprefix.stripprefix.prefixes=/${ETHERPAD_HOST}
+        - traefik.http.services.${STACK_NAME?Variable not set}-${ETHERPAD_HOST}.loadbalancer.server.port=${ETHERPAD_PORT}
 
     networks:
       - traefik-public
       - default
       
-  etherwrapper:
-    container_name: etherwrapper-production
-    image: 'etherwrapper:${TAG-latest}'
-    env_file:
-      - .env
-    environment:
-      - SERVER_NAME=${DOMAIN?Variable not set}
-      - SERVER_HOST=https://${DOMAIN?Variable not set}
-      - PORT=${WRAPPER_PORT}
-      # Allow explicit env var override for tests
-    build:
-      context: ./wrapper
-      args:
-        INSTALL_DEV: ${INSTALL_DEV-false}
-    depends_on:
-      - etherpad
-    deploy:
-      labels:
-        - traefik.enable=true
-        - traefik.docker.network=traefik-public
-        - traefik.http.routers.${STACK_NAME?Variable not set}-etherwrapper-http.rule=PathPrefix(`/etherwrapper`)
-        - traefik.http.routers.${STACK_NAME?Variable not set}-etherwrapper-http.middlewares=etherwrapper-stripprefix
-        - traefik.http.middlewares.etherwrapper-stripprefix.stripprefix.prefixes=/etherwrapper
-        - traefik.http.services.${STACK_NAME?Variable not set}-etherwrapper.loadbalancer.server.port=${WRAPPER_PORT}
-    networks:
-      - traefik-public
-      - default
-
   mongodb:
       image: bitnami/mongodb:latest
-      container_name: etherwrapper-mongodb
+      container_name: etherpad-mongodb
       environment:
         - MONGODB_USERNAME
         - MONGODB_PASSWORD

@@ -2,7 +2,7 @@
   border-radius: 3px;
   width: 12px;
   height: 28px;
-  background-color: #252525;
+  background-color: #64d29b;
   background-color: var(--primary-color);
 }
 
@@ -17,7 +17,7 @@
 #slider-btn-container #playpause_button_icon {
   color: #ffffff;
   color: var(--bg-color);
-  background-color: #252525;
+  background-color: #64d29b;
   background-color: var(--primary-color);
   border: none;
   margin-right: 5px;
@@ -35,9 +35,9 @@
   line-height: 28px;
   margin-left: 5px;
   font-size: 13px;
-  color: #252525;
+  color: #64d29b;
   color: var(--primary-color);
-  border-color: #252525;
+  border-color: #64d29b;
   border-color: var(--primary-color);
 }
 #slider-btn-container .stepper.disabled {

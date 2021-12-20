@@ -1,5 +1,5 @@
 .gritter-item:not(.error) .popup-content{
-  background-color: #252525;
+  background-color: #64d29b;
   background-color: var(--primary-color);
   color: #ffffff;
   color: var(--super-light-color);

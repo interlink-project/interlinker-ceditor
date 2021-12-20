@@ -1,21 +1,10 @@
 from app.config import settings
 import os
 
-etherpad_host = os.getenv("ETHERPAD_HOST")
-base_url = f"http://{etherpad_host}"
-
-domain = os.getenv("DOMAIN", "localhost")
-# if base path exists, means that is behing proxy
-base_path = os.getenv("BASE_PATH")
-if len(base_path) > 0:
-    # Integrated
-    domain_url = f"http://{domain}{base_path}"
-else:
-    # Solo development
-    port = os.getenv("ETHERPAD_EXTERNAL_PORT", "9010")
-    domain_url = f"http://{domain}:{port}"
+base_url = f"http://{settings.ETHERPAD_SERVICE}"
 
 listAllPads = f"{base_url}/api/1.2.15/listAllPads?apikey={settings.ETHERPAD_API_KEY}"
+
 
 def createAuthorIfNotExistsFor(authorName, authorMapper):
     return f"{base_url}/api/1.2.15/createAuthorIfNotExistsFor?apikey={settings.ETHERPAD_API_KEY}&name={authorName}&authorMapper={authorMapper}"
@@ -28,16 +17,13 @@ def createGroupIfNotExistsFor(groupMapper):
 def createGroupPad(groupID, padName):
     return f"{base_url}/api/1.2.15/createGroupPad?apikey={settings.ETHERPAD_API_KEY}&groupID={groupID}&padName={padName}&text="
 
+
 def deletePad(padID):
     return f"{base_url}/api/1.2.15/deletePad?apikey={settings.ETHERPAD_API_KEY}&padID={padID}"
 
 
 def createSession(groupID, authorID, validUntil=2022201246):
     return f"{base_url}/api/1.2.15/createSession?apikey={settings.ETHERPAD_API_KEY}&groupID={groupID}&authorID={authorID}&validUntil={validUntil}"
-
-
-def iframeUrl(sessionID, groupID, padName):
-    return f"{domain_url}/auth_session?sessionID={sessionID}&groupID={groupID}&padName={padName}"
 
 
 def getSessionInfo(sessionID):
@@ -55,6 +41,7 @@ def listSessionsOfAuthor(authorID):
 def getHTML(padID):
     return f"{base_url}/api/1.2.15/getHTML?apikey={settings.ETHERPAD_API_KEY}&padID={padID}"
 
+
 def setHTML(padID, html):
     return f"{base_url}/api/1.2.15/setHTML?apikey={settings.ETHERPAD_API_KEY}&padID={padID}&html={html}"
 
@@ -69,3 +56,21 @@ def padUsers(padID):
 
 def getLastEdited(padID):
     return f"{base_url}/api/1.2.15/getLastEdited?apikey={settings.ETHERPAD_API_KEY}&padID={padID}"
+
+
+domain = os.getenv("DOMAIN", "localhost")
+# if base path exists, means that is behing proxy
+base_path = os.getenv("BASE_PATH")
+if len(base_path) > 0:
+    # Integrated
+    domain_url = f"http://{domain}/{settings.ETHERPAD_HOST}"
+else:
+    # Solo development
+    port = os.getenv("ETHERPAD_SOLODEVPORT", "9010")
+    domain_url = f"http://{domain}:{port}"
+
+print("eooo")
+print(domain_url)
+
+def iframeUrl(sessionID, groupID, padName):
+    return f"{domain_url}/auth_session?sessionID={sessionID}&groupID={groupID}&padName={padName}"

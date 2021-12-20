@@ -51,7 +51,7 @@ input {
   text-shadow: none;
   font-size: 23px;
   line-height: 1.8;
-  color: #252525;
+  color: #64d29b;
   background: #586a69;
   border-radius: 3px;
   box-shadow: none;
@@ -65,7 +65,7 @@ button[type=submit] {
   border-top-right-radius: 3px;
   border-bottom-right-radius: 3px;
   left: 305px;
-  color: #252525;
+  color: #64d29b;
   background: #586a69;
   border: none;
   top: 0;
@@ -77,7 +77,7 @@ button[type=submit] {
 button[type=submit]:hover {
   cursor: pointer;
   background: #4a5d5c;
-  color: #252525;
+  color: #64d29b;
 }
 
 #padname {

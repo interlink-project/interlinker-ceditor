@@ -22,15 +22,11 @@ const jsdom = require('jsdom');
 const rehype = require('rehype');
 const minifyWhitespace = require('rehype-minify-whitespace');
 
+const apiLogger = log4js.getLogger('ImportHtml');
+const processor = rehype().use(minifyWhitespace, {newlines: false});
+
 exports.setPadHTML = async (pad, html) => {
-  const apiLogger = log4js.getLogger('ImportHtml');
-
-  rehype()
-      .use(minifyWhitespace, {newlines: false})
-      .process(html, (err, output) => {
-        html = String(output);
-      });
-
+  html = String(await processor.process(html));
   const {window: {document}} = new jsdom.JSDOM(html);
 
   // Appends a line break, used by Etherpad to ensure a caret is available
@@ -67,35 +63,29 @@ exports.setPadHTML = async (pad, html) => {
   apiLogger.debug(newText);
   const newAttribs = `${result.lineAttribs.join('|1+1')}|1+1`;
 
-  const eachAttribRun = (attribs, func /* (startInNewText, endInNewText, attribs)*/) => {
-    const attribsIter = Changeset.opIterator(attribs);
-    let textIndex = 0;
-    const newTextStart = 0;
-    const newTextEnd = newText.length;
-    while (attribsIter.hasNext()) {
-      const op = attribsIter.next();
-      const nextIndex = textIndex + op.chars;
-      if (!(nextIndex <= newTextStart || textIndex >= newTextEnd)) {
-        func(Math.max(newTextStart, textIndex), Math.min(newTextEnd, nextIndex), op.attribs);
-      }
-      textIndex = nextIndex;
-    }
-  };
-
   // create a new changeset with a helper builder object
   const builder = Changeset.builder(1);
 
   // assemble each line into the builder
-  eachAttribRun(newAttribs, (start, end, attribs) => {
-    builder.insert(newText.substring(start, end), attribs);
-  });
+  const attribsIter = Changeset.opIterator(newAttribs);
+  let textIndex = 0;
+  const newTextStart = 0;
+  const newTextEnd = newText.length;
+  while (attribsIter.hasNext()) {
+    const op = attribsIter.next();
+    const nextIndex = textIndex + op.chars;
+    if (!(nextIndex <= newTextStart || textIndex >= newTextEnd)) {
+      const start = Math.max(newTextStart, textIndex);
+      const end = Math.min(newTextEnd, nextIndex);
+      builder.insert(newText.substring(start, end), op.attribs);
+    }
+    textIndex = nextIndex;
+  }
 
   // the changeset is ready!
   const theChangeset = builder.toString();
 
   apiLogger.debug(`The changeset: ${theChangeset}`);
-  await Promise.all([
-    pad.setText('\n'),
-    pad.appendRevision(theChangeset),
-  ]);
+  await pad.setText('\n');
+  if (!Changeset.isIdentity(theChangeset)) await pad.appendRevision(theChangeset);
 };

@@ -59,7 +59,7 @@ def main():
     return RedirectResponse(url=f"{BASE_PATH}/docs")
 
 
-@mainrouter.get("/healthcheck")
+@mainrouter.get("/healthcheck/")
 def healthcheck():
     return True
 
@@ -192,7 +192,7 @@ async def gui_asset(request: Request, id: str):
         email = "j.badiola@deusto.es"
         """
         response = requests.get(
-            "http://proxy/auth/api/v1/users/me", headers=request.headers)
+            "http://auth/api/v1/users/me", headers=request.headers)
         current_user = json.loads(response._content)
 
         try:

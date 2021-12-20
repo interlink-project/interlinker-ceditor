@@ -89,7 +89,7 @@ select:hover, .nice-select:hover {
 }
 [type="checkbox"]:checked + label:before {
   background-color: transparent;
-  border-color: #252525;
+  border-color: #64d29b;
   border-color: var(--primary-color);
 }
 
@@ -104,7 +104,7 @@ select:hover, .nice-select:hover {
   left: -3px;
 }
 [type="checkbox"]:checked + label:after {
-  background-color: #252525;
+  background-color: #64d29b;
   background-color: var(--primary-color);
   transform: translateX(14px);
 }
