@@ -7,8 +7,7 @@ if [ $(uname -s) = "Linux" ]; then
 fi
 
 docker-compose down -v --remove-orphans # Remove possibly previous broken stacks left hanging after an error
-docker-compose build
-docker-compose up -d
-docker-compose exec etherwrapper pytest --cov=app --cov-report=term-missing app/tests
-# docker-compose exec etherwrapper pytest app/tests
-docker-compose down -v --remove-orphans
+docker-compose -f docker-compose.yml -f docker-compose.solodev.yml build
+docker-compose -f docker-compose.yml -f docker-compose.solodev.yml up -d
+#docker-compose exec etherwrapper pytest --cov=app --cov-report=term-missing app/tests
+docker-compose exec etherwrapper pytest app/tests

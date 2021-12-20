@@ -1,6 +1,7 @@
 version: "3.3"
 services:
   etherwrapper:
+    image: '${WRAPPER_HOST}dev:${TAG-latest}'
     container_name: ${WRAPPER_HOST}-integrated
     volumes:
       - ./${WRAPPER_HOST}:/app

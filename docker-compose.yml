@@ -2,7 +2,7 @@ version: "3.3"
 services:
   etherwrapper:
     container_name: ${WRAPPER_HOST}-production
-    image: '${WRAPPER_HOST}:${TAG-latest}'
+    image: '${WRAPPER_HOST}prod:${TAG-latest}'
     env_file:
       - .env
     environment:
