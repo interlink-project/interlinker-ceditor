@@ -24,6 +24,7 @@ starlette = "^0.16.0"
 itsdangerous = "^2.0.1"
 pymongo = "^3.11.1"
 motor = "^2.3.0"
+PyJWT = "^2.2.0"
 
 [tool.poetry.dev-dependencies]
 mypy = "^0.770"

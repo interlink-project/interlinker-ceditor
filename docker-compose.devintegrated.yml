@@ -1,0 +1,60 @@
+version: "3.3"
+services:
+  etherwrapper:
+    image: 'etherwrapperdev:${TAG-latest}'
+    container_name: etherwrapper-integrated
+    volumes:
+      - ./etherwrapper:/app
+    env_file:
+      - .env
+    environment:
+      - SERVER_NAME=${DOMAIN?Variable not set}
+      - SERVER_HOST=https://${DOMAIN?Variable not set}/etherwrapper
+      - PORT=${WRAPPER_PORT}
+      - BASE_PATH=/etherwrapper
+      - MONGODB_URL=mongodb://user:userpass@mongodb:27017/data?retryWrites=true&w=majority
+    build:
+      context: ./etherwrapper
+      args:
+        INSTALL_DEV: ${INSTALL_DEV-true}
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.http.routers.${STACK_NAME?Variable not set}-etherwrapper-http.rule=PathPrefix(`/etherwrapper`)
+      - traefik.http.services.${STACK_NAME?Variable not set}-etherwrapper.loadbalancer.server.port=${WRAPPER_PORT}
+      - traefik.http.routers.${STACK_NAME?Variable not set}-etherwrapper-http.middlewares=etherwrapper-stripprefix
+      - traefik.http.middlewares.etherwrapper-stripprefix.stripprefix.prefixes=/etherwrapper
+    networks:
+      - traefik-public
+      - default
+
+  etherpad:
+    container_name: etherpad-integrated
+    build:
+      context: ./etherpad
+      dockerfile: Dockerfile
+      args:
+        - ETHERPAD_API_KEY=${ETHERPAD_API_KEY}
+    environment:
+      - TITLE=${ETHERPAD_TITLE}
+      - PORT=${ETHERPAD_PORT}
+      - DEFAULT_PAD_TEXT=${ETHERPAD_DEFAULT_PAD_TEXT}
+      - ADMIN_PASSWORD=${ETHERPAD_ADMIN_PASSWORD}
+      - ADMIN_USER=${ETHERPAD_ADMIN_USER}
+      - REQUIRE_SESSION=${ETHERPAD_REQUIRE_SESSION}
+      - EDIT_ONLY=${ETHERPAD_EDIT_ONLY}
+      - MONGODB_URL=mongodb://user:userpass@mongodb:27017/data?retryWrites=true&w=majority
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.http.routers.${STACK_NAME?Variable not set}-etherpad-http.rule=PathPrefix(`/etherpad`)
+      - traefik.http.services.${STACK_NAME?Variable not set}-etherpad.loadbalancer.server.port=${ETHERPAD_PORT}
+      - traefik.http.routers.${STACK_NAME?Variable not set}-etherpad-http.middlewares=etherpad-stripprefix
+      - traefik.http.middlewares.etherpad-stripprefix.stripprefix.prefixes=/etherpad
+    networks:
+      - traefik-public
+      - default
+
+networks:
+  traefik-public:
+    external: true

@@ -8,7 +8,6 @@ logger = logging.getLogger(__name__)
 max_tries = 60 * 5  # 5 minutes
 wait_seconds = 10
 
-
 @retry(
     stop=stop_after_attempt(max_tries),
     wait=wait_fixed(wait_seconds),
@@ -17,12 +16,11 @@ wait_seconds = 10
 )
 def waitForDatabase() -> None:
     try:
-        from app.database import db
-        db["assets"].find_one({"_id": "TEST"})
+        from app.database import collection
+        collection.find_one({"_id": "TEST"})
     except Exception as e:
         logger.error(e)
         raise e
-
 
 
 @retry(
