@@ -49,7 +49,7 @@ To get a local copy up and running follow these simple example steps.
 
    or 
    ```sh
-   make devbuild
+   docker-compose -f docker-compose.devsolo.yml build
    ```
 
 1. Run the containers in solo version
