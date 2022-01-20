@@ -15,8 +15,8 @@ services:
       - ./etherwrapper:/app
     build:
       context: ./etherwrapper
-      args:
-        INSTALL_DEV: ${INSTALL_DEV-true}
+      dockerfile: Dockerfile
+      target: dev
     ports:
       - "${WRAPPER_SOLODEVPORT}:${WRAPPER_PORT}"
     networks:

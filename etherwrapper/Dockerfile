@@ -8,16 +8,23 @@ RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-
     poetry config virtualenvs.create false
 
 # Copy poetry.lock* in case it doesn't exist in the repo
-COPY pyproject.toml poetry.lock* /app/
-
-# Allow installing dev dependencies to run tests
-ARG INSTALL_DEV=false
-RUN bash -c "if [ $INSTALL_DEV == 'true' ] ; then poetry install --no-root ; else poetry install --no-root --no-dev ; fi"
+COPY ./pyproject.toml ./poetry.lock* /app/
 
 COPY . /app
 ENV PYTHONPATH=/app
 
 EXPOSE 80
 
-RUN chmod +x ./start.sh
-CMD ["bash", "./start.sh"]
+FROM builder as dev
+
+RUN poetry install --no-root
+COPY ./start-dev.sh ./start-dev.sh
+RUN chmod +x ./start-dev.sh
+CMD ["bash", "./start-dev.sh"]
+
+FROM builder as prod
+
+RUN poetry install --no-root --no-dev
+COPY ./start-prod.sh ./start-prod.sh
+RUN chmod +x ./start-prod.sh
+CMD ["bash", "./start-prod.sh"]

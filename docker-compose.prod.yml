@@ -3,8 +3,11 @@ services:
   etherwrapper:
     container_name: etherwrapper-production
     image: 'etherwrapperprod:${TAG-latest}'
+    volumes:
+      - .:/app
     env_file:
       - .env
+    restart: always
     environment:
       - SERVER_NAME=${DOMAIN?Variable not set}
       - SERVER_HOST=https://${DOMAIN?Variable not set}
@@ -13,11 +16,21 @@ services:
       - MONGODB_URL=mongoprodurl
     build:
       context: ./etherwrapper
-      args:
-        INSTALL_DEV: ${INSTALL_DEV-false}
+      dockerfile: Dockerfile
+      target: prod
     depends_on:
       etherpad:
         condition: service_healthy
+    labels:
+        - traefik.enable=true
+        - traefik.docker.network=traefik-public
+        - traefik.http.routers.${STACK_NAME?Variable not
+          set}-etherwrapper-http.rule=PathPrefix(`/etherwrapper`)
+        - traefik.http.routers.${STACK_NAME?Variable not
+          set}-etherwrapper-http.middlewares=etherwrapper-stripprefix
+        - traefik.http.middlewares.etherwrapper-stripprefix.stripprefix.prefixes=/etherwrapper
+        - traefik.http.services.${STACK_NAME?Variable not
+          set}-etherwrapper.loadbalancer.server.port=${WRAPPER_PORT}
     deploy:
       labels:
         - traefik.enable=true
@@ -51,7 +64,16 @@ services:
       - REQUIRE_SESSION=${ETHERPAD_REQUIRE_SESSION}
       - EDIT_ONLY=${ETHERPAD_EDIT_ONLY}
       - MONGODB_URL=mongoprodurl
-
+    labels:
+        - traefik.enable=true
+        - traefik.docker.network=traefik-public
+        - traefik.http.routers.${STACK_NAME?Variable not
+          set}-etherpad-http.rule=PathPrefix(`/etherpad`)
+        - traefik.http.routers.${STACK_NAME?Variable not
+          set}-etherpad-http.middlewares=etherpad-stripprefix
+        - traefik.http.middlewares.etherpad-stripprefix.stripprefix.prefixes=/etherpad
+        - traefik.http.services.${STACK_NAME?Variable not
+          set}-etherpad.loadbalancer.server.port=${ETHERPAD_PORT}
     deploy:
       labels:
         - traefik.enable=true

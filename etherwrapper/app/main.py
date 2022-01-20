@@ -18,21 +18,26 @@ from fastapi import (
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
 
 from app.authentication import get_current_user
 from app.config import settings
-from app.database import collection
 from app.etherpad import *
 from app.model import AssetCreate
-
-templates = Jinja2Templates(directory="templates")
+from app.database import connect_to_mongo, close_mongo_connection, AsyncIOMotorCollection, get_collection
 
 BASE_PATH = os.getenv("BASE_PATH", "")
 
 app = FastAPI(
     title="Etherpad API Wrapper", openapi_url=f"/openapi.json", docs_url="/docs", root_path=BASE_PATH
 )
+app.add_event_handler("startup", connect_to_mongo)
+app.add_event_handler("shutdown", close_mongo_connection)
+
+
+templates = Jinja2Templates(directory="templates")
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Set all CORS enabled origins
 if settings.BACKEND_CORS_ORIGINS:
@@ -43,17 +48,7 @@ if settings.BACKEND_CORS_ORIGINS:
         allow_headers=["*"],
     )
 
-"""
-from fastapi_utils.tasks import repeat_every
-@app.on_event("startup")
-@repeat_every(seconds=60 * 60)  # 1 hour
-def repetitive_task() -> None:
-    pass
-    # clean(db)
-"""
-
 mainrouter = APIRouter()
-
 
 @mainrouter.get("/")
 def main():
@@ -80,7 +75,7 @@ async def get_real_pads():
 
 
 @specificrouter.get("/pads/delete", response_description="Delete unused pads")
-async def delete_unused_pads():
+async def delete_unused_pads(collection: AsyncIOMotorCollection = Depends(get_collection)):
     assets = await collection.find().to_list(1000)
     response = requests.get(listAllPads)
     data = json.loads(response._content)
@@ -92,7 +87,7 @@ async def delete_unused_pads():
 
 
 @specificrouter.get("/pads/clean", response_description="Delete all pads")
-async def delete_all_pads():
+async def delete_all_pads(collection: AsyncIOMotorCollection = Depends(get_collection)):
     assets = await collection.find().to_list(1000)
     for asset in assets:
         requests.get(deletePad(asset["padID"]))
@@ -103,7 +98,7 @@ async def delete_all_pads():
 defaultrouter = APIRouter()
 
 
-async def create_pad(name):
+async def create_pad(collection, name):
     groupMapper = ''.join(random.choice(string.ascii_lowercase) for i in range(10))
     response = requests.get(createGroupIfNotExistsFor(groupMapper=groupMapper))
     data = json.loads(response._content)
@@ -127,15 +122,15 @@ async def create_pad(name):
 
 
 @defaultrouter.post("/assets/", response_description="Add new asset")
-async def create_asset(asset_in: AssetCreate = Body(...)):
-    created_asset = await create_pad(asset_in.name)
+async def create_asset(asset_in: AssetCreate = Body(...), collection: AsyncIOMotorCollection = Depends(get_collection)):
+    created_asset = await create_pad(collection, asset_in.name)
     return JSONResponse(status_code=status.HTTP_201_CREATED, content=created_asset)
 
 
 @defaultrouter.get(
     "/assets/", response_description="List all assets"
 )
-async def list_assets():
+async def list_assets(collection: AsyncIOMotorCollection = Depends(get_collection)):
     assets = await collection.find().to_list(1000)
     return JSONResponse(status_code=status.HTTP_200_OK, content=assets)
 
@@ -143,7 +138,7 @@ async def list_assets():
 @defaultrouter.get(
     "/assets/{id}", response_description="Get a single asset"
 )
-async def show_asset(id: str):
+async def show_asset(id: str, collection: AsyncIOMotorCollection = Depends(get_collection)):
     if (asset := await collection.find_one({"_id": id})) is not None:
         return JSONResponse(status_code=status.HTTP_200_OK, content=asset)
 
@@ -153,10 +148,10 @@ async def show_asset(id: str):
 @defaultrouter.post(
     "/assets/{id}/clone", response_description="Clone specific asset"
 )
-async def clone_asset(id: str):
+async def clone_asset(id: str, collection: AsyncIOMotorCollection = Depends(get_collection)):
     if (asset := await collection.find_one({"_id": id})) is not None:
         original_name = asset["name"]
-        created_asset = await create_pad(f"Copy of {original_name}")
+        created_asset = await create_pad(collection, f"Copy of {original_name}")
         response = requests.get(getHTML(padID=asset["padID"]))
         data = json.loads(response._content)
         html = data["data"]["html"]
@@ -172,7 +167,7 @@ async def clone_asset(id: str):
 
 
 @defaultrouter.delete("/assets/{id}", response_description="Delete a asset")
-async def delete_asset(id: str):
+async def delete_asset(id: str, collection: AsyncIOMotorCollection = Depends(get_collection)):
     if (asset := await collection.find_one({"_id": id})) is not None:
         response = requests.get(deletePad(padID=asset["padID"]))
         data = json.loads(response._content)
@@ -188,7 +183,7 @@ async def delete_asset(id: str):
 @defaultrouter.get(
     "/assets/{id}/gui", response_description="GUI for specific asset"
 )
-async def gui_asset(request: Request, id: str, current_user: dict = Depends(get_current_user)):
+async def gui_asset(request: Request, id: str, current_user: dict = Depends(get_current_user), collection: AsyncIOMotorCollection = Depends(get_collection)):
     if (asset := await collection.find_one({"_id": id})) is not None:
         email = current_user["email"] if current_user else f"anonymous{random.randint(10000, 99999)}"
         
@@ -207,6 +202,12 @@ async def gui_asset(request: Request, id: str, current_user: dict = Depends(get_
         return response
 
     raise HTTPException(status_code=404, detail="Asset {id} not found")
+
+@defaultrouter.get(
+    "/assets/instantiator/", response_description="Survey creator"
+)
+async def instantiator(request: Request):
+    return templates.TemplateResponse("instantiator.html", {"request": request, "BASE_PATH": BASE_PATH})
 
 
 app.include_router(mainrouter, tags=["main"])
