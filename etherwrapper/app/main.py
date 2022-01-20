@@ -99,6 +99,8 @@ defaultrouter = APIRouter()
 
 
 async def create_pad(collection, name):
+    if not name or name == "":
+        raise HTTPException(status_code=400, detail="Invalid name")
     groupMapper = ''.join(random.choice(string.ascii_lowercase) for i in range(10))
     response = requests.get(createGroupIfNotExistsFor(groupMapper=groupMapper))
     data = json.loads(response._content)
@@ -198,13 +200,13 @@ async def gui_asset(request: Request, id: str, current_user: dict = Depends(get_
 
         url = iframeUrl(sessionID, asset["groupID"], asset["name"])
         response = templates.TemplateResponse(
-            "index.html", {"request": request, "url": url})
+            "gui.html", {"request": request, "url": url})
         return response
 
     raise HTTPException(status_code=404, detail="Asset {id} not found")
 
 @defaultrouter.get(
-    "/assets/instantiator/", response_description="Survey creator"
+    "/assets/instantiator/", response_description="Pad asset creator"
 )
 async def instantiator(request: Request):
     return templates.TemplateResponse("instantiator.html", {"request": request, "BASE_PATH": BASE_PATH})
@@ -213,3 +215,9 @@ async def instantiator(request: Request):
 app.include_router(mainrouter, tags=["main"])
 app.include_router(defaultrouter, prefix=settings.API_V1_STR, tags=["default"])
 app.include_router(specificrouter, prefix=settings.API_V1_STR, tags=["specific"])
+
+
+from starlette.status import HTTP_422_UNPROCESSABLE_ENTITY
+from app.errors import http_422_error_handler
+
+app.add_exception_handler(HTTP_422_UNPROCESSABLE_ENTITY, http_422_error_handler)
