@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     SERVER_HOST: AnyHttpUrl
 
     MONGODB_URL: str
-    DATABASE_NAME: str
+    MONGODB_DATABASE: str
     COLLECTION_NAME: str
 
     ETHERPAD_API_KEY: str
