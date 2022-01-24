@@ -33,8 +33,6 @@ services:
     build:
       context: ./etherpad
       dockerfile: Dockerfile
-      args:
-        - ETHERPAD_API_KEY=${ETHERPAD_API_KEY}
     environment:
       - TITLE=${ETHERPAD_TITLE}
       - PORT=${ETHERPAD_PORT}

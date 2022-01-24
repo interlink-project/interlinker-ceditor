@@ -59,9 +59,6 @@ USER etherpad
 WORKDIR "${EP_DIR}"
 
 COPY --chown=etherpad:etherpad ./ ./
-ARG ETHERPAD_API_KEY=nofunciona
-
-RUN echo "${ETHERPAD_API_KEY}" > APIKEY.txt
 
 # Plugins must be installed before installing Etherpad's dependencies, otherwise
 # npm will try to hoist common dependencies by removing them from
@@ -85,4 +82,5 @@ RUN chmod -R g=u .
 HEALTHCHECK --interval=20s --timeout=3s CMD curl -f http://localhost:9001 || exit 1
 
 EXPOSE 9001
-CMD ["node", "src/node/server.js"]
+
+CMD ["bash", "entrypoint.sh"]

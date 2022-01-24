@@ -51,8 +51,6 @@ services:
     build:
       context: ./etherpad
       dockerfile: Dockerfile
-      args:
-        - ETHERPAD_API_KEY=${ETHERPAD_API_KEY}
     env_file:
       - .env
     environment:

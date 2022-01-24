@@ -36,8 +36,6 @@ jobs:
           file: etherpad/Dockerfile
           push: true
           tags: interlinkproject/interlinker-etherpad:etherpad-latest
-          build-args: |
-            ETHERPAD_API_KEY=${{ secrets.ETHERPAD_API_KEY }}
           cache-from: type=registry,ref=interlinkproject/interlinker-etherpad:etherpad-buildcache
           cache-to: type=registry,ref=interlinkproject/interlinker-etherpad:etherpad-buildcache,mode=max
       - name: Trigger Dev Deployment
