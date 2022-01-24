@@ -59,7 +59,7 @@ To get a local copy up and running follow these simple example steps.
    ```
    or
    ```sh
-   docker-compose -f docker-compose.devsolo.yml --env-file=.env.solo up -d
+   docker-compose -f docker-compose.devsolo.yml --env-file .env.solo up -d
    ```
 1. Run the containers in integrated version
 
