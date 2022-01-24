@@ -60,10 +60,10 @@ def healthcheck():
     return True
 
 
-specificrouter = APIRouter()
+customrouter = APIRouter()
 
 
-@specificrouter.get("/pads", response_description="Get real pads")
+@customrouter.get("/pads", response_description="Get real pads")
 async def get_real_pads():
     response = requests.get(listAllPads)
     data = json.loads(response._content)
@@ -74,7 +74,7 @@ async def get_real_pads():
     return JSONResponse(status_code=status.HTTP_200_OK, content=data)
 
 
-@specificrouter.get("/pads/delete", response_description="Delete unused pads")
+@customrouter.get("/pads/delete", response_description="Delete unused pads")
 async def delete_unused_pads(collection: AsyncIOMotorCollection = Depends(get_collection)):
     assets = await collection.find().to_list(1000)
     response = requests.get(listAllPads)
@@ -86,7 +86,7 @@ async def delete_unused_pads(collection: AsyncIOMotorCollection = Depends(get_co
     return JSONResponse(status_code=status.HTTP_200_OK, content=data)
 
 
-@specificrouter.get("/pads/clean", response_description="Delete all pads")
+@customrouter.get("/pads/clean", response_description="Delete all pads")
 async def delete_all_pads(collection: AsyncIOMotorCollection = Depends(get_collection)):
     assets = await collection.find().to_list(1000)
     for asset in assets:
@@ -147,43 +147,10 @@ async def show_asset(id: str, collection: AsyncIOMotorCollection = Depends(get_c
     raise HTTPException(status_code=404, detail="Asset {id} not found")
 
 
-@defaultrouter.post(
-    "/assets/{id}/clone", response_description="Clone specific asset"
-)
-async def clone_asset(id: str, collection: AsyncIOMotorCollection = Depends(get_collection)):
-    if (asset := await collection.find_one({"_id": id})) is not None:
-        original_name = asset["name"]
-        created_asset = await create_pad(collection, f"Copy of {original_name}")
-        response = requests.get(getHTML(padID=asset["padID"]))
-        data = json.loads(response._content)
-        html = data["data"]["html"]
+integrablerouter = APIRouter()
 
-        print(f"Setting html {html}")
-        requests.get(setHTML(padID=created_asset["padID"], html=html))
-        # response = requests.get(getHTML(padID=created_asset["padID"]))
-        # data = json.loads(response._content)
-        # print(data)
-        return JSONResponse(status_code=status.HTTP_201_CREATED, content=created_asset)
-
-    raise HTTPException(status_code=404, detail="Asset {id} not found")
-
-
-@defaultrouter.delete("/assets/{id}", response_description="Delete a asset")
-async def delete_asset(id: str, collection: AsyncIOMotorCollection = Depends(get_collection)):
-    if (asset := await collection.find_one({"_id": id})) is not None:
-        response = requests.get(deletePad(padID=asset["padID"]))
-        data = json.loads(response._content)
-        print(data)
-        delete_result = await collection.delete_one({"_id": id})
-        if delete_result.deleted_count == 1:
-            return JSONResponse(status_code=status.HTTP_204_NO_CONTENT)
-        return HTTPException(status_code=503, detail="Error while deleting")
-
-    raise HTTPException(status_code=404, detail="Asset {id} not found")
-
-
-@defaultrouter.get(
-    "/assets/{id}/gui", response_description="GUI for specific asset"
+@integrablerouter.get(
+    "/assets/{id}/gui/", response_description="GUI for specific asset"
 )
 async def gui_asset(request: Request, id: str, current_user: dict = Depends(get_current_user), collection: AsyncIOMotorCollection = Depends(get_collection)):
     if (asset := await collection.find_one({"_id": id})) is not None:
@@ -205,16 +172,51 @@ async def gui_asset(request: Request, id: str, current_user: dict = Depends(get_
 
     raise HTTPException(status_code=404, detail="Asset {id} not found")
 
-@defaultrouter.get(
+@integrablerouter.get(
     "/assets/instantiator/", response_description="Pad asset creator"
 )
 async def instantiator(request: Request):
     return templates.TemplateResponse("instantiator.html", {"request": request, "BASE_PATH": BASE_PATH})
 
 
+@integrablerouter.delete("/assets/{id}", response_description="Delete a asset")
+async def delete_asset(id: str, collection: AsyncIOMotorCollection = Depends(get_collection)):
+    if (asset := await collection.find_one({"_id": id})) is not None:
+        response = requests.get(deletePad(padID=asset["padID"]))
+        data = json.loads(response._content)
+        print(data)
+        delete_result = await collection.delete_one({"_id": id})
+        if delete_result.deleted_count == 1:
+            return JSONResponse(status_code=status.HTTP_204_NO_CONTENT)
+        return HTTPException(status_code=503, detail="Error while deleting")
+
+    raise HTTPException(status_code=404, detail="Asset {id} not found")
+
+
+@integrablerouter.post(
+    "/assets/{id}/clone/", response_description="Clone specific asset"
+)
+async def clone_asset(id: str, collection: AsyncIOMotorCollection = Depends(get_collection)):
+    if (asset := await collection.find_one({"_id": id})) is not None:
+        original_name = asset["name"]
+        created_asset = await create_pad(collection, f"Copy of {original_name}")
+        response = requests.get(getHTML(padID=asset["padID"]))
+        data = json.loads(response._content)
+        html = data["data"]["html"]
+
+        print(f"Setting html {html}")
+        requests.get(setHTML(padID=created_asset["padID"], html=html))
+        # response = requests.get(getHTML(padID=created_asset["padID"]))
+        # data = json.loads(response._content)
+        # print(data)
+        return JSONResponse(status_code=status.HTTP_201_CREATED, content=created_asset)
+
+    raise HTTPException(status_code=404, detail="Asset {id} not found")
+
 app.include_router(mainrouter, tags=["main"])
-app.include_router(defaultrouter, prefix=settings.API_V1_STR, tags=["default"])
-app.include_router(specificrouter, prefix=settings.API_V1_STR, tags=["specific"])
+app.include_router(integrablerouter, tags=["Integrable"])
+app.include_router(customrouter, tags=["Custom endpoints"])
+app.include_router(defaultrouter, prefix=settings.API_V1_STR, tags=["Default operations"])
 
 
 from starlette.status import HTTP_422_UNPROCESSABLE_ENTITY

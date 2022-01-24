@@ -14,17 +14,27 @@ const {
 function App() {
   const [name, setName] = React.useState("");
   const [created, setCreated] = React.useState(false);
-
+  const inIframe = window.location !== window.parent.location
+  
+  React.useEffect(() => {
+    if (inIframe) {
+      window.parent.postMessage({
+        'code': 'initialized',
+      }, "*");
+    }
+  }, [])
   const submit = () => {
     service.create({ name }).then(response => {
       console.log("RESPONSE CONFIRM", response.data);
-      if (window.parent) {
+      if (inIframe) {
         window.parent.postMessage({
           'code': 'asset_created',
           'data': response.data
         }, "*");
       }
-      setCreated(response.data)
+      else {
+        setCreated(response.data)
+      }
     })
   }
   return (
@@ -77,7 +87,7 @@ function App() {
             <Button
               color='primary'
               variant='contained'
-              href={`${basepath}/api/v1/assets/${created._id}/gui`}
+              href={`${basepath}/assets/${created._id}/gui`}
             >
               Open asset
             </Button>
