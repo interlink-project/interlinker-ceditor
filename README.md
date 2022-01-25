@@ -46,30 +46,17 @@ To get a local copy up and running follow these simple example steps.
 1. Build the containers
 
    ```sh
-   make devbuild
-   ```
-
-   or 
-   ```sh
    docker-compose -f docker-compose.devsolo.yml --env-file .env.solo build
    ```
 
 1. Run the containers in solo version
 
    ```sh
-   make solo
-   ```
-   or
-   ```sh
    docker-compose -f docker-compose.devsolo.yml --env-file .env.solo up -d
    ```
-1. Run the containers in integrated version
+1. Run the containers in integrated version (behind traefik proxy)
 
     ```sh
-   make integrated
-   ```
-   or
-   ```sh
    docker-compose -f docker-compose.devintegrated.yml up -d
    ```
 

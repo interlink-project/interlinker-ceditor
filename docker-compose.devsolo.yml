@@ -32,12 +32,11 @@ services:
         condition: service_healthy
     ports:
       - "${ETHERPAD_SOLODEVPORT}:${ETHERPAD_PORT}"
-    env_file:
-      - .env.solo
     environment:
       - TITLE=${ETHERPAD_TITLE}
       - PORT=${ETHERPAD_PORT}
       - DEFAULT_PAD_TEXT=${ETHERPAD_DEFAULT_PAD_TEXT}
+      - ETHERPAD_API_KEY=${ETHERPAD_API_KEY}
       - ADMIN_PASSWORD=${ETHERPAD_ADMIN_PASSWORD}
       - ADMIN_USER=${ETHERPAD_ADMIN_USER}
       - REQUIRE_SESSION=${ETHERPAD_REQUIRE_SESSION}
