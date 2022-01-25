@@ -180,7 +180,8 @@ async def gui_asset(request: Request, id: str, current_user: dict = Depends(get_
         response.set_cookie(
             key="sessionID",
             value=session_id,
-            secure=True
+            # TODO: if https, true
+            secure=False
         )
         return response
 
