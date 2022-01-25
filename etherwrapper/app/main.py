@@ -12,20 +12,22 @@ from fastapi import (
     FastAPI,
     HTTPException,
     Request,
-    UploadFile,
+    Cookie,
     status,
 )
+from typing import Optional
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
 
-from app.authentication import get_current_user
+from app.authentication import get_current_user, get_current_active_user
 from app.config import settings
 from app.etherpad import *
 from app.model import AssetCreate
 from app.database import connect_to_mongo, close_mongo_connection, AsyncIOMotorCollection, get_collection
+import time
 
 BASE_PATH = os.getenv("BASE_PATH", "")
 
@@ -102,14 +104,11 @@ async def create_pad(collection, name):
     if not name or name == "":
         raise HTTPException(status_code=400, detail="Invalid name")
     groupMapper = ''.join(random.choice(string.ascii_lowercase) for i in range(10))
-    response = requests.get(createGroupIfNotExistsFor(groupMapper=groupMapper))
-    data = json.loads(response._content)
-    print(data)
-    groupID = data["data"]["groupID"]
-    response = requests.get(createGroupPad(groupID=groupID, padName=name))
-    data = json.loads(response._content)
-    print(data)
-    padID = data["data"]["padID"]
+    response = requests.get(createGroupIfNotExistsFor(groupMapper=groupMapper)).json()
+    groupID = response["data"]["groupID"]
+    response = requests.get(createGroupPad(groupID=groupID, padName=name)).json()
+    padID = response["data"]["padID"]
+    print(f"Created pad {padID} for {groupID}")
 
     asset = {
         "_id": uuid.uuid4().hex,
@@ -118,6 +117,7 @@ async def create_pad(collection, name):
         "groupID": groupID,
         "padID": padID
     }
+    print(asset)
     asset = jsonable_encoder(asset)
     new_asset = await collection.insert_one(asset)
     return await collection.find_one({"_id": new_asset.inserted_id})
@@ -152,22 +152,36 @@ integrablerouter = APIRouter()
 @integrablerouter.get(
     "/assets/{id}/gui/", response_description="GUI for specific asset"
 )
-async def gui_asset(request: Request, id: str, current_user: dict = Depends(get_current_user), collection: AsyncIOMotorCollection = Depends(get_collection)):
+async def gui_asset(request: Request, id: str, current_user: dict = Depends(get_current_active_user), collection: AsyncIOMotorCollection = Depends(get_collection), sessionID: Optional[str] = Cookie(None)):
     if (asset := await collection.find_one({"_id": id})) is not None:
-        email = current_user["email"] if current_user else f"anonymous{random.randint(10000, 99999)}"
+        print(f"Current sessionID: {sessionID}")
         
+        user_id = current_user["sub"]
+        email = current_user["email"]
+
+        # TODO: check if user has access to this resource
+        print(email)
         response = requests.get(createAuthorIfNotExistsFor(
-            authorName=email, authorMapper=email))
+            authorName=email, authorMapper=user_id))
         data = json.loads(response._content)
         authorID = data["data"]["authorID"]
-        response = requests.get(createSession(groupID=asset["groupID"],
-                                authorID=authorID, validUntil=2022201246))
-        data = json.loads(response._content)
-        sessionID = data["data"]["sessionID"]
 
-        url = iframeUrl(sessionID, asset["groupID"], asset["name"])
+        valid_until = int(time.time()) + 5 * 60 * 60 # 5 hours from now
+        response = requests.get(createSession(groupID=asset["groupID"],
+                                authorID=authorID, validUntil=valid_until))
+        data = json.loads(response._content)
+        session_id = data["data"]["sessionID"]
+        print(f"Session for {authorID}: {session_id}")
+        url = iframeUrl(asset["padID"])
         response = templates.TemplateResponse(
             "gui.html", {"request": request, "url": url})
+
+        # TODO: sessionID cookie can container session IDS separated by commas, so it would be nice to check if any of the current sessions is valid for this pad
+        response.set_cookie(
+            key="sessionID",
+            value=session_id,
+            secure=True
+        )
         return response
 
     raise HTTPException(status_code=404, detail="Asset {id} not found")

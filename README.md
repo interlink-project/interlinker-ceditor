@@ -15,9 +15,11 @@
     <a href="https://interlink-project.eu/"><strong>View Interlink project »</strong></a>
     <br />
     <br />
-    <a href="https://github.com/interlink-project/interlinker-collaborative-editor/issues">Report Bug</a>
+    <img src="https://github.com/interlink-project/interlinker-etherpad/actions/workflows/build-and-publish-docker.yml/badge.svg" alt="Docker build and publish status"></img>
+    <br />
+    <a href="https://github.com/interlink-project/interlinker-etherpad/issues">Report Bug</a>
     ·
-    <a href="https://github.com/interlink-project/interlinker-collaborative-editor/issues">Request Feature</a>
+    <a href="https://github.com/interlink-project/interlinker-etherpad/issues">Request Feature</a>
   </p>
 </div>
 
@@ -49,7 +51,7 @@ To get a local copy up and running follow these simple example steps.
 
    or 
    ```sh
-   docker-compose -f docker-compose.devsolo.yml build
+   docker-compose -f docker-compose.devsolo.yml --env-file .env.solo build
    ```
 
 1. Run the containers in solo version
@@ -71,31 +73,20 @@ To get a local copy up and running follow these simple example steps.
    docker-compose -f docker-compose.devintegrated.yml up -d
    ```
 
-<p align="right">(<a href="#top">back to top</a>)</p>
-
-
-
 <!-- USAGE EXAMPLES -->
 ## Usage
 
 DOMAIN:
-  * **Solo mode:** localhost:8456
-  * **Integrated mode:** localhost/etherwrapper
+  * **Solo mode:** http://localhost:8456 (or SOLODEVPORT defined in .env.solo)
+  * **Integrated mode:** http://localhost/etherwrapper
+
 ### Docs
 
 >  http://DOMAIN/docs
 
-### Asset instantiation
+### Integrable methods
 
->  POST to http://DOMAIN/api/v1/assets/
+>  POST to DOMAIN/assets/instantiator/ 
 
-### Asset retrieval
+>  GET to DOMAIN/assets/{id}/gui/
 
->  GET to http://DOMAIN/api/v1/assets/{id}
-
-### Editing interface
-
->  GET to http://DOMAIN/api/v1/assets/{id}/gui
-
-
-<p align="right">(<a href="#top">back to top</a>)</p>

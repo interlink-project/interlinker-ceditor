@@ -13,7 +13,7 @@ FROM node:14-buster-slim
 # EXAMPLE:
 #   ETHERPAD_PLUGINS="ep_codepad ep_author_neat"
 # ep_authorship_toggle ep_desktop_notifications
-ARG ETHERPAD_PLUGINS="ep_auth_session ep_disable_change_author_name ep_author_neat2 ep_disable_reset_authorship_colours ep_adminpads2 ep_comments_page ep_image_upload ep_align ep_font_size ep_headings2 ep_set_title_on_pad ep_font_color ep_embedmedia ep_inline_voting ep_cursortrace ep_mammoth"
+ARG ETHERPAD_PLUGINS="ep_disable_change_author_name ep_author_neat2 ep_disable_reset_authorship_colours ep_adminpads2 ep_comments_page ep_image_upload ep_align ep_font_size ep_headings2 ep_set_title_on_pad ep_font_color ep_embedmedia ep_inline_voting ep_cursortrace ep_mammoth"
 
 # By default, Etherpad container is built and run in "production" mode. This is
 # leaner (development dependencies are not installed) and runs faster (among

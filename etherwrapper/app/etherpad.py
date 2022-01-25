@@ -69,5 +69,5 @@ else:
     port = os.getenv("ETHERPAD_SOLODEVPORT", "9010")
     domain_url = f"http://{domain}:{port}"
 
-def iframeUrl(sessionID, groupID, padName):
-    return f"{domain_url}/auth_session?sessionID={sessionID}&groupID={groupID}&padName={padName}"
+def iframeUrl(padID) -> str:
+    return f"{domain_url}/p/{padID}"
