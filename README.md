@@ -75,5 +75,8 @@ DOMAIN:
 
 >  POST to DOMAIN/assets/instantiator/ 
 
->  GET to DOMAIN/assets/{id}/gui/
+>  GET to DOMAIN/assets/{id}/viewer/
 
+>  DELETE to DOMAIN/assets/{id}
+
+>  POST to DOMAIN/assets/{id}/clone/

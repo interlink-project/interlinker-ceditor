@@ -150,7 +150,7 @@ async def show_asset(id: str, collection: AsyncIOMotorCollection = Depends(get_c
 integrablerouter = APIRouter()
 
 @integrablerouter.get(
-    "/assets/{id}/gui/", response_description="GUI for specific asset"
+    "/assets/{id}/viewer/", response_description="GUI for specific asset"
 )
 async def gui_asset(request: Request, id: str, current_user: dict = Depends(get_current_active_user), collection: AsyncIOMotorCollection = Depends(get_collection), sessionID: Optional[str] = Cookie(None)):
     if (asset := await collection.find_one({"_id": id})) is not None:
