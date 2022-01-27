@@ -1,8 +1,8 @@
 version: "3.3"
 services:
-  etherwrapper:
-    image: 'etherwrapperdev:${TAG-latest}'
-    container_name: etherwrapper-solo
+  ceditor:
+    image: 'ceditordev:${TAG-latest}'
+    container_name: ceditor-solo
     env_file:
       - .env.solo
     environment:
@@ -12,9 +12,9 @@ services:
       - BASE_PATH=
       - MONGODB_URL=mongodb://${MONGODB_USERNAME}:${MONGODB_PASSWORD}@mongodb:27017/${MONGODB_DATABASE}?retryWrites=true&w=majority
     volumes:
-      - ./etherwrapper:/app
+      - ./ceditor:/app
     build:
-      context: ./etherwrapper
+      context: ./ceditor
       dockerfile: Dockerfile
       target: dev
     ports:

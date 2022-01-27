@@ -1,29 +1,29 @@
 version: "3.3"
 services:
-  etherwrapper:
-    image: 'etherwrapperdev:${TAG-latest}'
-    container_name: etherwrapper-integrated
+  ceditor:
+    image: 'ceditordev:${TAG-latest}'
+    container_name: ceditor-integrated
     volumes:
-      - ./etherwrapper:/app
+      - ./ceditor:/app
     env_file:
       - .env
     environment:
       - SERVER_NAME=${DOMAIN?Variable not set}
-      - SERVER_HOST=https://${DOMAIN?Variable not set}/etherwrapper
+      - SERVER_HOST=https://${DOMAIN?Variable not set}/ceditor
       - PORT=${WRAPPER_PORT}
-      - BASE_PATH=/etherwrapper
+      - BASE_PATH=/ceditor
       - MONGODB_URL=mongodb://user:userpass@mongodb:27017/data?retryWrites=true&w=majority
     build:
-      context: ./etherwrapper
+      context: ./ceditor
       dockerfile: Dockerfile
       target: dev
     labels:
       - traefik.enable=true
       - traefik.docker.network=traefik-public
-      - traefik.http.routers.${STACK_NAME?Variable not set}-etherwrapper-http.rule=PathPrefix(`/etherwrapper`)
-      - traefik.http.services.${STACK_NAME?Variable not set}-etherwrapper.loadbalancer.server.port=${WRAPPER_PORT}
-      - traefik.http.routers.${STACK_NAME?Variable not set}-etherwrapper-http.middlewares=etherwrapper-stripprefix
-      - traefik.http.middlewares.etherwrapper-stripprefix.stripprefix.prefixes=/etherwrapper
+      - traefik.http.routers.${STACK_NAME?Variable not set}-ceditor-http.rule=PathPrefix(`/ceditor`)
+      - traefik.http.services.${STACK_NAME?Variable not set}-ceditor.loadbalancer.server.port=${WRAPPER_PORT}
+      - traefik.http.routers.${STACK_NAME?Variable not set}-ceditor-http.middlewares=ceditor-stripprefix
+      - traefik.http.middlewares.ceditor-stripprefix.stripprefix.prefixes=/ceditor
     networks:
       - traefik-public
       - default

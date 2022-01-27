@@ -65,7 +65,7 @@ To get a local copy up and running follow these simple example steps.
 
 DOMAIN:
   * **Solo mode:** http://localhost:8456 (or SOLODEVPORT defined in .env.solo)
-  * **Integrated mode:** http://localhost/etherwrapper
+  * **Integrated mode:** http://localhost/ceditor
 
 ### Docs
 
