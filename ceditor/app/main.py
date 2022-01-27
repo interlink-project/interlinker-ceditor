@@ -32,7 +32,7 @@ import time
 BASE_PATH = os.getenv("BASE_PATH", "")
 
 app = FastAPI(
-    title="Etherpad API Wrapper", openapi_url=f"/openapi.json", docs_url="/docs", root_path=BASE_PATH
+    title="Collaborative Editor API", openapi_url=f"/openapi.json", docs_url="/docs", root_path=BASE_PATH
 )
 app.add_event_handler("startup", connect_to_mongo)
 app.add_event_handler("shutdown", close_mongo_connection)
