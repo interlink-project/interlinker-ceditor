@@ -15,11 +15,11 @@
     <a href="https://interlink-project.eu/"><strong>View Interlink project »</strong></a>
     <br />
     <br />
-    <img src="https://github.com/interlink-project/interlinker-etherpad/actions/workflows/build-and-publish-docker.yml/badge.svg" alt="Docker build and publish status"></img>
+    <img src="https://github.com/interlink-project/interlinker-ceditor/actions/workflows/build-and-publish-docker.yml/badge.svg" alt="Docker build and publish status"></img>
     <br />
-    <a href="https://github.com/interlink-project/interlinker-etherpad/issues">Report Bug</a>
+    <a href="https://github.com/interlink-project/interlinker-ceditor/issues">Report Bug</a>
     ·
-    <a href="https://github.com/interlink-project/interlinker-etherpad/issues">Request Feature</a>
+    <a href="https://github.com/interlink-project/interlinker-ceditor/issues">Request Feature</a>
   </p>
 </div>
 

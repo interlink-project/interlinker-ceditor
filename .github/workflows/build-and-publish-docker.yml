@@ -25,9 +25,9 @@ jobs:
           context: ./ceditor/.
           file: ceditor/Dockerfile
           push: true
-          tags: interlinkproject/interlinker-etherpad:ceditor-latest
-          cache-from: type=registry,ref=interlinkproject/interlinker-etherpad:ceditor-buildcache
-          cache-to: type=registry,ref=interlinkproject/interlinker-etherpad:ceditor-buildcache,mode=max
+          tags: interlinkproject/interlinker-ceditor:ceditor-latest
+          cache-from: type=registry,ref=interlinkproject/interlinker-ceditor:ceditor-buildcache
+          cache-to: type=registry,ref=interlinkproject/interlinker-ceditor:ceditor-buildcache,mode=max
       - name: Build and push Docker Image Etherpad
         id: docker_build_etherpad
         uses: docker/build-push-action@v2
@@ -35,9 +35,9 @@ jobs:
           context: ./etherpad/.
           file: etherpad/Dockerfile
           push: true
-          tags: interlinkproject/interlinker-etherpad:etherpad-latest
-          cache-from: type=registry,ref=interlinkproject/interlinker-etherpad:etherpad-buildcache
-          cache-to: type=registry,ref=interlinkproject/interlinker-etherpad:etherpad-buildcache,mode=max
+          tags: interlinkproject/interlinker-ceditor:etherpad-latest
+          cache-from: type=registry,ref=interlinkproject/interlinker-ceditor:etherpad-buildcache
+          cache-to: type=registry,ref=interlinkproject/interlinker-ceditor:etherpad-buildcache,mode=max
       - name: Trigger Dev Deployment
         uses: octokit/request-action@v2.x
         id: trigger_dev_deployment
