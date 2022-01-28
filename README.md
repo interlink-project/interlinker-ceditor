@@ -73,10 +73,10 @@ DOMAIN:
 
 ### Integrable methods
 
->  POST to DOMAIN/assets/instantiator/ 
+>  POST to DOMAIN/assets/instantiate 
 
->  GET to DOMAIN/assets/{id}/viewer/
+>  GET to DOMAIN/assets/{id}/view
 
 >  DELETE to DOMAIN/assets/{id}
 
->  POST to DOMAIN/assets/{id}/clone/
+>  POST to DOMAIN/assets/{id}/clone

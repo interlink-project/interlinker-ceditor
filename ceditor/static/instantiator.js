@@ -87,7 +87,7 @@ function App() {
             <Button
               color='primary'
               variant='contained'
-              href={`${basepath}/assets/${created._id}/viewer/`}
+              href={`${basepath}/assets/${created._id}/view`}
             >
               Open asset
             </Button>

@@ -57,13 +57,101 @@ def main():
     return RedirectResponse(url=f"{BASE_PATH}/docs")
 
 
-@mainrouter.get("/healthcheck/")
+@mainrouter.get("/healthcheck")
 def healthcheck():
     return True
 
 
-customrouter = APIRouter()
+integrablerouter = APIRouter()
 
+@integrablerouter.get(
+    "/assets/instantiate", response_description="GUI for asset creation"
+)
+async def instantiate_asset(request: Request):
+    return templates.TemplateResponse("instantiator.html", {"request": request, "BASE_PATH": BASE_PATH})
+
+
+@integrablerouter.get(
+    "/assets/{id}", response_description="Asset JSON"
+)
+async def asset_data(id: str, collection: AsyncIOMotorCollection = Depends(get_collection)):
+    if (asset := await collection.find_one({"_id": id})) is not None:
+        return asset
+
+    raise HTTPException(status_code=404, detail="Asset {id} not found")
+
+@integrablerouter.delete("/assets/{id}", response_description="No content")
+async def delete_asset(id: str, collection: AsyncIOMotorCollection = Depends(get_collection)):
+    if (asset := await collection.find_one({"_id": id})) is not None:
+        response = requests.get(deletePad(padID=asset["padID"]))
+        data = json.loads(response._content)
+        print(data)
+        delete_result = await collection.delete_one({"_id": id})
+        if delete_result.deleted_count == 1:
+            return JSONResponse(status_code=status.HTTP_204_NO_CONTENT)
+        return HTTPException(status_code=503, detail="Error while deleting")
+
+    raise HTTPException(status_code=404, detail="Asset {id} not found")
+
+@integrablerouter.get(
+    "/assets/{id}/view", response_description="GUI for interaction with asset"
+)
+async def gui_asset(request: Request, id: str, current_user: dict = Depends(get_current_active_user), collection: AsyncIOMotorCollection = Depends(get_collection), sessionID: Optional[str] = Cookie(None)):
+    if (asset := await collection.find_one({"_id": id})) is not None:        
+        user_id = current_user["sub"]
+        email = current_user["email"]
+
+        # TODO: check if user has access to this resource
+        print(email)
+        response = requests.get(createAuthorIfNotExistsFor(
+            authorName=email, authorMapper=user_id))
+        data = json.loads(response._content)
+        authorID = data["data"]["authorID"]
+
+        valid_until = int(time.time()) + 5 * 60 * 60 # 5 hours from now
+        response = requests.get(createSession(groupID=asset["groupID"],
+                                authorID=authorID, validUntil=valid_until))
+        data = json.loads(response._content)
+        session_id = data["data"]["sessionID"]
+        print(f"Session for {authorID}: {session_id}")
+        url = iframeUrl(asset["padID"])
+        response = templates.TemplateResponse(
+            "gui.html", {"request": request, "url": url})
+
+        # TODO: sessionID cookie can container session IDS separated by commas, so it would be nice to check if any of the current sessions is valid for this pad
+        response.set_cookie(
+            key="sessionID",
+            value=session_id,
+            # TODO: if https, true
+            secure=False
+        )
+        return response
+
+    raise HTTPException(status_code=404, detail="Asset {id} not found")
+
+@integrablerouter.post(
+    "/assets/{id}/clone", response_description="Asset JSON"
+)
+async def clone_asset(id: str, collection: AsyncIOMotorCollection = Depends(get_collection)):
+    if (asset := await collection.find_one({"_id": id})) is not None:
+        original_name = asset["name"]
+        created_asset = await create_pad(collection, f"Copy of {original_name}")
+        response = requests.get(getHTML(padID=asset["padID"]))
+        data = json.loads(response._content)
+        html = data["data"]["html"]
+
+        print(f"Setting html {html}")
+        requests.get(setHTML(padID=created_asset["padID"], html=html))
+        # response = requests.get(getHTML(padID=created_asset["padID"]))
+        # data = json.loads(response._content)
+        # print(data)
+        return JSONResponse(status_code=status.HTTP_201_CREATED, content=created_asset)
+
+    raise HTTPException(status_code=404, detail="Asset {id} not found")
+
+
+
+customrouter = APIRouter()
 
 @customrouter.get("/pads", response_description="Get real pads")
 async def get_real_pads():
@@ -97,9 +185,6 @@ async def delete_all_pads(collection: AsyncIOMotorCollection = Depends(get_colle
 
     return JSONResponse(status_code=status.HTTP_200_OK)
 
-defaultrouter = APIRouter()
-
-
 async def create_pad(collection, name):
     if not name or name == "":
         raise HTTPException(status_code=400, detail="Invalid name")
@@ -123,115 +208,23 @@ async def create_pad(collection, name):
     return await collection.find_one({"_id": new_asset.inserted_id})
 
 
-@defaultrouter.post("/assets/", response_description="Add new asset")
+@customrouter.post("/assets", response_description="Add new asset")
 async def create_asset(asset_in: AssetCreate = Body(...), collection: AsyncIOMotorCollection = Depends(get_collection)):
     created_asset = await create_pad(collection, asset_in.name)
     return JSONResponse(status_code=status.HTTP_201_CREATED, content=created_asset)
 
 
-@defaultrouter.get(
-    "/assets/", response_description="List all assets"
+@customrouter.get(
+    "/assets", response_description="List all assets"
 )
 async def list_assets(collection: AsyncIOMotorCollection = Depends(get_collection)):
     assets = await collection.find().to_list(1000)
     return JSONResponse(status_code=status.HTTP_200_OK, content=assets)
 
 
-@defaultrouter.get(
-    "/assets/{id}", response_description="Get a single asset"
-)
-async def show_asset(id: str, collection: AsyncIOMotorCollection = Depends(get_collection)):
-    if (asset := await collection.find_one({"_id": id})) is not None:
-        return JSONResponse(status_code=status.HTTP_200_OK, content=asset)
-
-    raise HTTPException(status_code=404, detail="Asset {id} not found")
-
-
-integrablerouter = APIRouter()
-
-@integrablerouter.get(
-    "/assets/{id}/viewer/", response_description="GUI for specific asset"
-)
-async def gui_asset(request: Request, id: str, current_user: dict = Depends(get_current_active_user), collection: AsyncIOMotorCollection = Depends(get_collection), sessionID: Optional[str] = Cookie(None)):
-    if (asset := await collection.find_one({"_id": id})) is not None:
-        print(f"Current sessionID: {sessionID}")
-        
-        user_id = current_user["sub"]
-        email = current_user["email"]
-
-        # TODO: check if user has access to this resource
-        print(email)
-        response = requests.get(createAuthorIfNotExistsFor(
-            authorName=email, authorMapper=user_id))
-        data = json.loads(response._content)
-        authorID = data["data"]["authorID"]
-
-        valid_until = int(time.time()) + 5 * 60 * 60 # 5 hours from now
-        response = requests.get(createSession(groupID=asset["groupID"],
-                                authorID=authorID, validUntil=valid_until))
-        data = json.loads(response._content)
-        session_id = data["data"]["sessionID"]
-        print(f"Session for {authorID}: {session_id}")
-        url = iframeUrl(asset["padID"])
-        response = templates.TemplateResponse(
-            "gui.html", {"request": request, "url": url})
-
-        # TODO: sessionID cookie can container session IDS separated by commas, so it would be nice to check if any of the current sessions is valid for this pad
-        response.set_cookie(
-            key="sessionID",
-            value=session_id,
-            # TODO: if https, true
-            secure=False
-        )
-        return response
-
-    raise HTTPException(status_code=404, detail="Asset {id} not found")
-
-@integrablerouter.get(
-    "/assets/instantiator/", response_description="Pad asset creator"
-)
-async def instantiator(request: Request):
-    return templates.TemplateResponse("instantiator.html", {"request": request, "BASE_PATH": BASE_PATH})
-
-
-@integrablerouter.delete("/assets/{id}", response_description="Delete a asset")
-async def delete_asset(id: str, collection: AsyncIOMotorCollection = Depends(get_collection)):
-    if (asset := await collection.find_one({"_id": id})) is not None:
-        response = requests.get(deletePad(padID=asset["padID"]))
-        data = json.loads(response._content)
-        print(data)
-        delete_result = await collection.delete_one({"_id": id})
-        if delete_result.deleted_count == 1:
-            return JSONResponse(status_code=status.HTTP_204_NO_CONTENT)
-        return HTTPException(status_code=503, detail="Error while deleting")
-
-    raise HTTPException(status_code=404, detail="Asset {id} not found")
-
-
-@integrablerouter.post(
-    "/assets/{id}/clone/", response_description="Clone specific asset"
-)
-async def clone_asset(id: str, collection: AsyncIOMotorCollection = Depends(get_collection)):
-    if (asset := await collection.find_one({"_id": id})) is not None:
-        original_name = asset["name"]
-        created_asset = await create_pad(collection, f"Copy of {original_name}")
-        response = requests.get(getHTML(padID=asset["padID"]))
-        data = json.loads(response._content)
-        html = data["data"]["html"]
-
-        print(f"Setting html {html}")
-        requests.get(setHTML(padID=created_asset["padID"], html=html))
-        # response = requests.get(getHTML(padID=created_asset["padID"]))
-        # data = json.loads(response._content)
-        # print(data)
-        return JSONResponse(status_code=status.HTTP_201_CREATED, content=created_asset)
-
-    raise HTTPException(status_code=404, detail="Asset {id} not found")
-
 app.include_router(mainrouter, tags=["main"])
 app.include_router(integrablerouter, tags=["Integrable"])
-app.include_router(customrouter, tags=["Custom endpoints"])
-app.include_router(defaultrouter, prefix=settings.API_V1_STR, tags=["Default operations"])
+app.include_router(customrouter, prefix=settings.API_V1_STR, tags=["Custom endpoints"])
 
 
 from starlette.status import HTTP_422_UNPROCESSABLE_ENTITY
