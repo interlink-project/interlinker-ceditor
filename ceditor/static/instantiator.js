@@ -15,7 +15,7 @@ function App() {
   const [name, setName] = React.useState("");
   const [created, setCreated] = React.useState(false);
   const inIframe = window.location !== window.parent.location
-  
+
   React.useEffect(() => {
     if (inIframe) {
       window.parent.postMessage({
@@ -23,18 +23,29 @@ function App() {
       }, "*");
     }
   }, [])
+
+  const sendMessage = (data) => {
+
+    if (inIframe) {
+      const dataToSend = {}
+      dataToSend["id"] = data._id
+      dataToSend["name"] = data.name
+      dataToSend["icon"] = "https://avatars.githubusercontent.com/u/19719052?s=88&v=4"
+
+      window.parent.postMessage({
+        'code': 'asset_created',
+        'data': dataToSend
+      }, "*");
+    } else {
+      setCreated(dataToSend)
+    }
+  }
+
   const submit = () => {
     service.create({ name }).then(response => {
-      console.log("RESPONSE CONFIRM", response.data);
-      if (inIframe) {
-        window.parent.postMessage({
-          'code': 'asset_created',
-          'data': response.data
-        }, "*");
-      }
-      else {
-        setCreated(response.data)
-      }
+      console.log("RESPONSE CREATE", response.data);
+      sendMessage(response.data)
+
     })
   }
   return (
