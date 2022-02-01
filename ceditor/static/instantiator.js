@@ -25,9 +25,8 @@ function App() {
   }, [])
 
   const sendMessage = (data) => {
-
+    const dataToSend = {}
     if (inIframe) {
-      const dataToSend = {}
       dataToSend["id"] = data._id
       dataToSend["name"] = data.name
       dataToSend["icon"] = "https://avatars.githubusercontent.com/u/19719052?s=88&v=4"
@@ -37,6 +36,7 @@ function App() {
         'data': dataToSend
       }, "*");
     } else {
+      dataToSend["id"] = data._id
       setCreated(dataToSend)
     }
   }
@@ -49,7 +49,7 @@ function App() {
     })
   }
   return (
-    <Container maxWidth={false}>
+    <Container maxWidth="md">
 
 
       {created ?
@@ -98,7 +98,7 @@ function App() {
             <Button
               color='primary'
               variant='contained'
-              href={`${basepath}/assets/${created._id}/view`}
+              href={`${basepath}/assets/${created.id}/view`}
             >
               Open asset
             </Button>

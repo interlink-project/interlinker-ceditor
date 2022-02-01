@@ -14,7 +14,7 @@ var http = axios.create({
 
 class Service {
     create(data, onUploadProgress) {
-        return http.post(`${basepath}/api/v1/assets`, data, {
+        return http.post(`${basepath}/assets`, data, {
             onUploadProgress,
         });
     }

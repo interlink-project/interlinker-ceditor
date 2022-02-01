@@ -2,32 +2,39 @@ import json
 import os
 import random
 import string
+import time
 import uuid
+from typing import Optional
 
 import requests
 from fastapi import (
     APIRouter,
     Body,
+    Cookie,
     Depends,
     FastAPI,
     HTTPException,
     Request,
-    Cookie,
     status,
 )
-from typing import Optional
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from starlette.middleware.cors import CORSMiddleware
+from starlette.status import HTTP_422_UNPROCESSABLE_ENTITY
 
-from app.authentication import get_current_user, get_current_active_user
+from app.authentication import get_current_active_user, get_current_user
 from app.config import settings
+from app.database import (
+    AsyncIOMotorCollection,
+    close_mongo_connection,
+    connect_to_mongo,
+    get_collection,
+)
+from app.errors import http_422_error_handler
 from app.etherpad import *
 from app.model import AssetCreate
-from app.database import connect_to_mongo, close_mongo_connection, AsyncIOMotorCollection, get_collection
-import time
 
 BASE_PATH = os.getenv("BASE_PATH", "")
 
@@ -52,6 +59,7 @@ if settings.BACKEND_CORS_ORIGINS:
 
 mainrouter = APIRouter()
 
+
 @mainrouter.get("/")
 def main():
     return RedirectResponse(url=f"{BASE_PATH}/docs")
@@ -63,6 +71,13 @@ def healthcheck():
 
 
 integrablerouter = APIRouter()
+
+
+@integrablerouter.post("/assets", response_description="Add new asset")
+async def create_asset(asset_in: AssetCreate = Body(...), collection: AsyncIOMotorCollection = Depends(get_collection)):
+    created_asset = await create_pad(collection, asset_in.name)
+    return JSONResponse(status_code=status.HTTP_201_CREATED, content=created_asset)
+
 
 @integrablerouter.get(
     "/assets/instantiate", response_description="GUI for asset creation"
@@ -80,6 +95,7 @@ async def asset_data(id: str, collection: AsyncIOMotorCollection = Depends(get_c
 
     raise HTTPException(status_code=404, detail="Asset {id} not found")
 
+
 @integrablerouter.delete("/assets/{id}", response_description="No content")
 async def delete_asset(id: str, collection: AsyncIOMotorCollection = Depends(get_collection)):
     if (asset := await collection.find_one({"_id": id})) is not None:
@@ -93,11 +109,12 @@ async def delete_asset(id: str, collection: AsyncIOMotorCollection = Depends(get
 
     raise HTTPException(status_code=404, detail="Asset {id} not found")
 
+
 @integrablerouter.get(
     "/assets/{id}/view", response_description="GUI for interaction with asset"
 )
-async def gui_asset(request: Request, id: str, current_user: dict = Depends(get_current_active_user), collection: AsyncIOMotorCollection = Depends(get_collection), sessionID: Optional[str] = Cookie(None)):
-    if (asset := await collection.find_one({"_id": id})) is not None:        
+async def view_asset(request: Request, id: str, current_user: dict = Depends(get_current_active_user), collection: AsyncIOMotorCollection = Depends(get_collection), sessionID: Optional[str] = Cookie(None)):
+    if (asset := await collection.find_one({"_id": id})) is not None:
         user_id = current_user["sub"]
         email = current_user["email"]
 
@@ -108,7 +125,7 @@ async def gui_asset(request: Request, id: str, current_user: dict = Depends(get_
         data = json.loads(response._content)
         authorID = data["data"]["authorID"]
 
-        valid_until = int(time.time()) + 5 * 60 * 60 # 5 hours from now
+        valid_until = int(time.time()) + 5 * 60 * 60  # 5 hours from now
         response = requests.get(createSession(groupID=asset["groupID"],
                                 authorID=authorID, validUntil=valid_until))
         data = json.loads(response._content)
@@ -128,6 +145,7 @@ async def gui_asset(request: Request, id: str, current_user: dict = Depends(get_
         return response
 
     raise HTTPException(status_code=404, detail="Asset {id} not found")
+
 
 @integrablerouter.post(
     "/assets/{id}/clone", response_description="Asset JSON"
@@ -149,9 +167,8 @@ async def clone_asset(id: str, collection: AsyncIOMotorCollection = Depends(get_
 
     raise HTTPException(status_code=404, detail="Asset {id} not found")
 
-
-
 customrouter = APIRouter()
+
 
 @customrouter.get("/pads", response_description="Get real pads")
 async def get_real_pads():
@@ -185,6 +202,7 @@ async def delete_all_pads(collection: AsyncIOMotorCollection = Depends(get_colle
 
     return JSONResponse(status_code=status.HTTP_200_OK)
 
+
 async def create_pad(collection, name):
     if not name or name == "":
         raise HTTPException(status_code=400, detail="Invalid name")
@@ -208,12 +226,6 @@ async def create_pad(collection, name):
     return await collection.find_one({"_id": new_asset.inserted_id})
 
 
-@customrouter.post("/assets", response_description="Add new asset")
-async def create_asset(asset_in: AssetCreate = Body(...), collection: AsyncIOMotorCollection = Depends(get_collection)):
-    created_asset = await create_pad(collection, asset_in.name)
-    return JSONResponse(status_code=status.HTTP_201_CREATED, content=created_asset)
-
-
 @customrouter.get(
     "/assets", response_description="List all assets"
 )
@@ -226,8 +238,5 @@ app.include_router(mainrouter, tags=["main"])
 app.include_router(integrablerouter, tags=["Integrable"])
 app.include_router(customrouter, prefix=settings.API_V1_STR, tags=["Custom endpoints"])
 
-
-from starlette.status import HTTP_422_UNPROCESSABLE_ENTITY
-from app.errors import http_422_error_handler
 
 app.add_exception_handler(HTTP_422_UNPROCESSABLE_ENTITY, http_422_error_handler)
