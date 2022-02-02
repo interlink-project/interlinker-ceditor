@@ -63,7 +63,7 @@ domain = os.getenv("DOMAIN", "localhost")
 base_path = os.getenv("BASE_PATH")
 if len(base_path) > 0:
     # Integrated
-    domain_url = f"http://{domain}/{settings.ETHERPAD_HOST}"
+    domain_url = f"{settings.PROTOCOL}{domain}/{settings.ETHERPAD_HOST}"
 else:
     # Solo development
     port = os.getenv("ETHERPAD_SOLODEVPORT", "9010")
