@@ -1,7 +1,6 @@
 import json
 import os
-import random
-import string
+
 import time
 import uuid
 from typing import Optional
@@ -34,7 +33,8 @@ from app.database import (
 )
 from app.errors import http_422_error_handler
 from app.etherpad import *
-from app.model import AssetCreate
+from app.model import AssetCreateSchema, AssetSchema, AssetBasicDataSchema
+from app import crud
 
 BASE_PATH = os.getenv("BASE_PATH", "")
 
@@ -73,9 +73,9 @@ def healthcheck():
 integrablerouter = APIRouter()
 
 
-@integrablerouter.post("/assets", response_description="Add new asset")
-async def create_asset(asset_in: AssetCreate = Body(...), collection: AsyncIOMotorCollection = Depends(get_collection)):
-    created_asset = await create_pad(collection, asset_in.name)
+@integrablerouter.post("/assets", response_description="Add new asset", response_model=AssetSchema)
+async def create_asset(asset_in: AssetCreateSchema = Body(...), collection: AsyncIOMotorCollection = Depends(get_collection)):
+    created_asset = await crud.create(collection=collection, asset=asset_in)
     return JSONResponse(status_code=status.HTTP_201_CREATED, content=created_asset)
 
 
@@ -87,10 +87,10 @@ async def instantiate_asset(request: Request):
 
 
 @integrablerouter.get(
-    "/assets/{id}", response_description="Asset JSON"
+    "/assets/{id}", response_description="Asset JSON", response_model=AssetBasicDataSchema
 )
 async def asset_data(id: str, collection: AsyncIOMotorCollection = Depends(get_collection)):
-    if (asset := await collection.find_one({"_id": id})) is not None:
+    if (asset := await crud.get(collection, id)) is not None:
         return asset
 
     raise HTTPException(status_code=404, detail="Asset {id} not found")
@@ -98,11 +98,8 @@ async def asset_data(id: str, collection: AsyncIOMotorCollection = Depends(get_c
 
 @integrablerouter.delete("/assets/{id}", response_description="No content")
 async def delete_asset(id: str, collection: AsyncIOMotorCollection = Depends(get_collection)):
-    if (asset := await collection.find_one({"_id": id})) is not None:
-        response = requests.get(deletePad(padID=asset["padID"]))
-        data = json.loads(response._content)
-        print(data)
-        delete_result = await collection.delete_one({"_id": id})
+    if (asset := await crud.get(collection, id)) is not None:
+        delete_result = await crud.delete(collection, asset)
         if delete_result.deleted_count == 1:
             return JSONResponse(status_code=status.HTTP_204_NO_CONTENT)
         return HTTPException(status_code=503, detail="Error while deleting")
@@ -113,8 +110,8 @@ async def delete_asset(id: str, collection: AsyncIOMotorCollection = Depends(get
 @integrablerouter.get(
     "/assets/{id}/view", response_description="GUI for interaction with asset"
 )
-async def view_asset(request: Request, id: str, current_user: dict = Depends(get_current_active_user), collection: AsyncIOMotorCollection = Depends(get_collection), sessionID: Optional[str] = Cookie(None)):
-    if (asset := await collection.find_one({"_id": id})) is not None:
+async def asset_viewer(request: Request, id: str, current_user: dict = Depends(get_current_active_user), collection: AsyncIOMotorCollection = Depends(get_collection), sessionID: Optional[str] = Cookie(None)):
+    if (asset := await crud.get(collection, id)) is not None:
         user_id = current_user["sub"]
         email = current_user["email"]
 
@@ -151,18 +148,8 @@ async def view_asset(request: Request, id: str, current_user: dict = Depends(get
     "/assets/{id}/clone", response_description="Asset JSON"
 )
 async def clone_asset(id: str, collection: AsyncIOMotorCollection = Depends(get_collection)):
-    if (asset := await collection.find_one({"_id": id})) is not None:
-        original_name = asset["name"]
-        created_asset = await create_pad(collection, f"Copy of {original_name}")
-        response = requests.get(getHTML(padID=asset["padID"]))
-        data = json.loads(response._content)
-        html = data["data"]["html"]
-
-        print(f"Setting html {html}")
-        requests.get(setHTML(padID=created_asset["padID"], html=html))
-        # response = requests.get(getHTML(padID=created_asset["padID"]))
-        # data = json.loads(response._content)
-        # print(data)
+    if (asset := await crud.get(collection, id)) is not None:
+        created_asset = await crud.clone(collection, asset)
         return JSONResponse(status_code=status.HTTP_201_CREATED, content=created_asset)
 
     raise HTTPException(status_code=404, detail="Asset {id} not found")
@@ -172,9 +159,8 @@ customrouter = APIRouter()
 
 @customrouter.get("/pads", response_description="Get real pads")
 async def get_real_pads():
-    response = requests.get(listAllPads)
-    data = json.loads(response._content)
-    data = data["data"]["padIDs"]
+    response = requests.get(listAllPads).json()
+    data = response["data"]["padIDs"]
     for i in data:
         print(i)
         requests.get(deletePad(i))
@@ -184,9 +170,8 @@ async def get_real_pads():
 @customrouter.get("/pads/delete", response_description="Delete unused pads")
 async def delete_unused_pads(collection: AsyncIOMotorCollection = Depends(get_collection)):
     assets = await collection.find().to_list(1000)
-    response = requests.get(listAllPads)
-    data = json.loads(response._content)
-    data = data["data"]["padIDs"]
+    response = requests.get(listAllPads).json()
+    data = response["data"]["padIDs"]
     matches = [asset["_id"] for asset in assets if asset["padID"] not in data]
     for id in matches:
         collection.delete_one({"_id": id})
@@ -202,28 +187,6 @@ async def delete_all_pads(collection: AsyncIOMotorCollection = Depends(get_colle
 
     return JSONResponse(status_code=status.HTTP_200_OK)
 
-
-async def create_pad(collection, name):
-    if not name or name == "":
-        raise HTTPException(status_code=400, detail="Invalid name")
-    groupMapper = ''.join(random.choice(string.ascii_lowercase) for i in range(10))
-    response = requests.get(createGroupIfNotExistsFor(groupMapper=groupMapper)).json()
-    groupID = response["data"]["groupID"]
-    response = requests.get(createGroupPad(groupID=groupID, padName=name)).json()
-    padID = response["data"]["padID"]
-    print(f"Created pad {padID} for {groupID}")
-
-    asset = {
-        "_id": uuid.uuid4().hex,
-        "groupMapper": groupMapper,
-        "name": name,
-        "groupID": groupID,
-        "padID": padID
-    }
-    print(asset)
-    asset = jsonable_encoder(asset)
-    new_asset = await collection.insert_one(asset)
-    return await collection.find_one({"_id": new_asset.inserted_id})
 
 
 @customrouter.get(

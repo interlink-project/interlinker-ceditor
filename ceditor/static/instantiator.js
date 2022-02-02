@@ -24,19 +24,16 @@ function App() {
     }
   }, [])
 
-  const sendMessage = (data) => {
-    const dataToSend = {}
+  const sendMessage = (code, data) => {
+    const dataToSend = {
+      id: data._id
+    }
     if (inIframe) {
-      dataToSend["id"] = data._id
-      dataToSend["name"] = data.name
-      dataToSend["icon"] = "https://avatars.githubusercontent.com/u/19719052?s=88&v=4"
-
       window.parent.postMessage({
-        'code': 'asset_created',
+        'code': code,
         'data': dataToSend
       }, "*");
     } else {
-      dataToSend["id"] = data._id
       setCreated(dataToSend)
     }
   }
@@ -44,7 +41,7 @@ function App() {
   const submit = () => {
     service.create({ name }).then(response => {
       console.log("RESPONSE CREATE", response.data);
-      sendMessage(response.data)
+      sendMessage("asset_created", response.data)
 
     })
   }

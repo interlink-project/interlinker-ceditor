@@ -9,7 +9,7 @@ services:
       - .env
     environment:
       - SERVER_NAME=${DOMAIN?Variable not set}
-      - SERVER_HOST=https://${DOMAIN?Variable not set}/ceditor
+      - SERVER_HOST=http://${DOMAIN?Variable not set}/ceditor
       - PORT=${WRAPPER_PORT}
       - BASE_PATH=/ceditor
       - MONGODB_URL=mongodb://user:userpass@mongodb:27017/data?retryWrites=true&w=majority
