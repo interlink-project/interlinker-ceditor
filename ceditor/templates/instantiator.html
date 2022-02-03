@@ -12,4 +12,17 @@
 
 {% block body %}
 <script type="text/babel" src="{{BASE_PATH}}/static/instantiator.js"></script>
+<style>
+    html,
+    body {
+        height: 100%;
+        width: 100%;
+        display: table;
+    }
+
+    #root {
+        display: table-cell;
+        vertical-align: middle;
+    }
+</style>
 {% endblock %}

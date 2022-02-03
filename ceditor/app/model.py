@@ -26,6 +26,8 @@ class AssetSchema(AssetCreateSchema):
 
 class AssetBasicDataSchema(BaseModel):
     id: str = Field(alias='_id')
+    name: str
+    interlinker_name: str = "Collaborative Editor"
     icon: str = "https://avatars.githubusercontent.com/u/19719052?s=88&v=4"
     # created_at: datetime.datetime = Field(alias='createdAt')
     # updated_at: Optional[datetime.datetime] = Field(alias='updatedAt')
