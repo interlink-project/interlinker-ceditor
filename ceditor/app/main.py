@@ -36,10 +36,14 @@ from app.etherpad import *
 from app.model import AssetCreateSchema, AssetSchema, AssetBasicDataSchema
 from app import crud
 
-BASE_PATH = os.getenv("BASE_PATH", "")
-
+domainfo = {
+        "PROTOCOL": settings.PROTOCOL,
+        "SERVER_NAME": settings.SERVER_NAME ,
+        "BASE_PATH": settings.BASE_PATH ,
+        "COMPLETE_SERVER_NAME": settings.COMPLETE_SERVER_NAME 
+    }
 app = FastAPI(
-    title="Collaborative Editor API", openapi_url=f"/openapi.json", docs_url="/docs", root_path=BASE_PATH
+    title="Collaborative Editor API", openapi_url=f"/openapi.json", docs_url="/docs", root_path=settings.BASE_PATH
 )
 app.add_event_handler("startup", connect_to_mongo)
 app.add_event_handler("shutdown", close_mongo_connection)
@@ -62,7 +66,7 @@ mainrouter = APIRouter()
 
 @mainrouter.get("/")
 def main():
-    return RedirectResponse(url=f"{BASE_PATH}/docs")
+    return RedirectResponse(url=f"{settings.BASE_PATH}/docs")
 
 
 @mainrouter.get("/healthcheck")
@@ -83,7 +87,7 @@ async def create_asset(asset_in: AssetCreateSchema = Body(...), collection: Asyn
     "/assets/instantiate", response_description="GUI for asset creation"
 )
 async def instantiate_asset(request: Request):
-    return templates.TemplateResponse("instantiator.html", {"request": request, "BASE_PATH": BASE_PATH})
+    return templates.TemplateResponse("instantiator.html", {"request": request, "BASE_PATH": settings.BASE_PATH, "DOMAIN_INFO": json.dumps(domainfo)})
 
 
 @integrablerouter.get(

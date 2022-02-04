@@ -6,8 +6,8 @@ services:
     env_file:
       - .env.solo
     environment:
-      - SERVER_NAME=${DOMAIN?Variable not set}
-      - SERVER_HOST=http://${DOMAIN?Variable not set}:${WRAPPER_SOLODEVPORT}
+      - PROTOCOL=http://
+      - SERVER_NAME=${DOMAIN?Variable not set}:${WRAPPER_SOLODEVPORT}
       - PORT=${WRAPPER_PORT}
       - BASE_PATH=
       - MONGODB_URL=mongodb://${MONGODB_USERNAME}:${MONGODB_PASSWORD}@mongodb:27017/${MONGODB_DATABASE}?retryWrites=true&w=majority

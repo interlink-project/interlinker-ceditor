@@ -20,7 +20,7 @@ function App() {
     if (inIframe) {
       window.parent.postMessage({
         'code': 'initialized',
-      }, "*");
+      }, origin);
     }
   }, [])
 
@@ -32,7 +32,7 @@ function App() {
       window.parent.postMessage({
         'code': code,
         'data': dataToSend
-      }, "*");
+      }, origin);
     } else {
       setCreated(dataToSend)
     }

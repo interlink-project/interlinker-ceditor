@@ -58,16 +58,11 @@ def getLastEdited(padID):
     return f"{base_url}/api/1.2.15/getLastEdited?apikey={settings.ETHERPAD_API_KEY}&padID={padID}"
 
 
-domain = os.getenv("DOMAIN", "localhost")
-# if base path exists, means that is behing proxy
-base_path = os.getenv("BASE_PATH")
-if len(base_path) > 0:
-    # Integrated
-    domain_url = f"{settings.PROTOCOL}{domain}/{settings.ETHERPAD_HOST}"
+if settings.MODE_INTEGRATED or settings.MODE_PRODUCTION:
+    domain_url = f"{settings.PROTOCOL}{settings.SERVER_NAME}/{settings.ETHERPAD_HOST}"
 else:
-    # Solo development
     port = os.getenv("ETHERPAD_SOLODEVPORT", "9010")
-    domain_url = f"http://{domain}:{port}"
+    domain_url = f"http://localhost:{port}"
 
 def iframeUrl(padID) -> str:
     return f"{domain_url}/p/{padID}"

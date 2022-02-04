@@ -3,7 +3,9 @@ const {
     createTheme,
 } = MaterialUI;
 
-var { basepath, datafrombackend } = jQuery('#data').data();
+var { domain, basepath, datafrombackend } = jQuery('#data').data();
+const origin = domain.PROTOCOL + domain.SERVER_NAME
+console.log("ORIGIN", origin)
 
 var http = axios.create({
     headers: {
