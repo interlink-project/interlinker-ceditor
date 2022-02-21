@@ -25,25 +25,16 @@ class AssetSchema(AssetCreateSchema):
         allow_population_by_field_name = True
 
 class AssetBasicDataSchema(BaseModel):
-    id: str = Field(alias='_id')
+    # id: str = Field(alias='_id')
     name: str
-    interlinker_name: str = "Collaborative Editor"
     icon: str = "https://avatars.githubusercontent.com/u/19719052?s=88&v=4"
-    # created_at: datetime.datetime = Field(alias='createdAt')
-    # updated_at: Optional[datetime.datetime] = Field(alias='updatedAt')
-    # viewLink: Optional[str]
-    # editLink: Optional[str]
-    # cloneLink: Optional[str]
-
     createdTime: datetime.datetime = Field(alias='created_at')
     modifiedTime: Optional[datetime.datetime] = Field(alias='updated_at')
-    viewLink: Optional[str]
-    editLink: Optional[str]
-    cloneLink: Optional[str]
 
     class Config:
         allow_population_by_field_name = True
-        
+
+    """
     @validator('viewLink', always=True)
     def view_link(cls, name, values):
         asset_id = values["id"]
@@ -53,3 +44,8 @@ class AssetBasicDataSchema(BaseModel):
     def clone_link(cls, name, values):
         asset_id = values["id"]
         return settings.COMPLETE_SERVER_NAME + f"/assets/{asset_id}/clone"
+    
+    viewLink: Optional[str]
+    editLink: Optional[str]
+    cloneLink: Optional[str]
+    """
