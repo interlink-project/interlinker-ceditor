@@ -1,7 +1,7 @@
 version: "3.3"
 services:
   ceditor:
-    image: 'ceditordev:${TAG-latest}'
+    image: 'ceditordev'
     container_name: ceditor-integrated
     volumes:
       - ./ceditor:/app
