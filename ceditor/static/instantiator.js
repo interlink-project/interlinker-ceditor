@@ -14,35 +14,19 @@ const {
 function App() {
   const [name, setName] = React.useState("");
   const [created, setCreated] = React.useState(false);
-  const inIframe = window.location !== window.parent.location
 
   React.useEffect(() => {
-    if (inIframe) {
-      window.parent.postMessage({
-        'code': 'initialized',
-      }, origin);
-    }
+    sendMessage("initialized")
   }, [])
-
-  const sendMessage = (code, data) => {
-    const dataToSend = {
-      id: data._id
-    }
-    if (inIframe) {
-      window.parent.postMessage({
-        'code': code,
-        'message': dataToSend
-      }, origin);
-    } else {
-      setCreated(dataToSend)
-    }
-  }
+  
 
   const submit = () => {
     service.create({ name }).then(response => {
       console.log("RESPONSE CREATE", response.data);
-      sendMessage("asset_created", response.data)
-
+      const dataToSend = {
+        id: response.data._id
+      }
+      sendMessage("asset_created", dataToSend, () => setCreated(dataToSend), null, window.close)
     })
   }
   return (
