@@ -25,7 +25,7 @@ class AssetSchema(AssetCreateSchema):
         allow_population_by_field_name = True
 
 class AssetBasicDataSchema(BaseModel):
-    # id: str = Field(alias='_id')
+    id: str = Field(alias='_id')
     name: str
     icon: str = "https://avatars.githubusercontent.com/u/19719052?s=88&v=4"
     createdTime: datetime.datetime = Field(alias='created_at')

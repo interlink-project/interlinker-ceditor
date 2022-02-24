@@ -149,7 +149,7 @@ async def asset_viewer(request: Request, id: str, current_user: dict = Depends(g
 
 
 @integrablerouter.post(
-    "/assets/{id}/clone", response_description="Asset JSON"
+    "/assets/{id}/clone", response_description="Asset JSON", response_model=AssetBasicDataSchema
 )
 async def clone_asset(id: str, collection: AsyncIOMotorCollection = Depends(get_collection)):
     if (asset := await crud.get(collection, id)) is not None:
