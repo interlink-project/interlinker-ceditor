@@ -12,7 +12,7 @@ def decode_token(jwtoken):
         signing_key.key,
         algorithms=["RS256"],
         audience="c_0e0822df-9df8-48d6-b4d9-c542a4623f1b",
-        options={"verify_nbf": False},
+        # options={"verify_nbf": False},
     )
     return data
 
