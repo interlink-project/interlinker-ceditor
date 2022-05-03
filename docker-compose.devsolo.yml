@@ -39,6 +39,7 @@ services:
       - REQUIRE_SESSION=${ETHERPAD_REQUIRE_SESSION}
       - EDIT_ONLY=${ETHERPAD_EDIT_ONLY}
       - MONGODB_URL=mongodb://${MONGODB_USERNAME}:${MONGODB_PASSWORD}@mongodb:27017/${MONGODB_DATABASE}?retryWrites=true&w=majority
+      - TZ=${TZ}
     networks:
       - default
 

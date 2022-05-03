@@ -47,6 +47,7 @@ services:
       - REQUIRE_SESSION=${ETHERPAD_REQUIRE_SESSION}
       - EDIT_ONLY=${ETHERPAD_EDIT_ONLY}
       - MONGODB_URL=mongodb://user:userpass@mongodb:27017/data?retryWrites=true&w=majority
+      - TZ=${TZ}
     labels:
       - traefik.enable=true
       - traefik.docker.network=traefik-public
