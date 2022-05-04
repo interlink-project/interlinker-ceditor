@@ -46,26 +46,14 @@ To get a local copy up and running follow these simple example steps.
 1. Build the containers
 
    ```sh
-   docker-compose -f docker-compose.devsolo.yml --env-file .env.solo build
+   docker-compose -f docker-compose.devintegrated.yml build
    ```
 
-1. Run the containers in solo version
-
-   ```sh
-   docker-compose -f docker-compose.devsolo.yml --env-file .env.solo up -d
-   ```
-1. Run the containers in integrated version (behind traefik proxy)
+1. Run the containers
 
     ```sh
    docker-compose -f docker-compose.devintegrated.yml up -d
    ```
-
-<!-- USAGE EXAMPLES -->
-## Usage
-
-DOMAIN:
-  * **Solo mode:** http://localhost:8456 (or SOLODEVPORT defined in .env.solo)
-  * **Integrated mode:** http://localhost/ceditor
 
 ### Docs
 
