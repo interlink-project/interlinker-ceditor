@@ -35,8 +35,8 @@ jobs:
           file: ceditor/Dockerfile
           push: true
           tags: |
-            interlinkproject/interlinker-ceditor:ceditor-${{ github.ref_name }}
-            interlinkproject/interlinker-ceditor:ceditor-${{ github.ref_name }}.${{ steps.date.outputs.date }}
+            interlinkproject/interlinker-ceditor:ceditor.${{ github.ref_name }}
+            interlinkproject/interlinker-ceditor:ceditor.${{ github.ref_name }}.${{ steps.date.outputs.date }}
           cache-from: type=registry,ref=interlinkproject/interlinker-ceditor:ceditor-buildcache
           cache-to: type=registry,ref=interlinkproject/interlinker-ceditor:ceditor-buildcache,mode=max
       - name: Build and push Docker Image Etherpad
@@ -47,8 +47,8 @@ jobs:
           file: etherpad/Dockerfile
           push: true
           tags: |
-            interlinkproject/interlinker-ceditor:etherpad-${{ github.ref_name }}
-            interlinkproject/interlinker-ceditor:etherpad-${{ github.ref_name }}.${{ github.ref_name }}
+            interlinkproject/interlinker-ceditor:etherpad.${{ github.ref_name }}
+            interlinkproject/interlinker-ceditor:etherpad.${{ github.ref_name }}.${{ github.ref_name }}
           cache-from: type=registry,ref=interlinkproject/interlinker-ceditor:etherpad-buildcache
           cache-to: type=registry,ref=interlinkproject/interlinker-ceditor:etherpad-buildcache,mode=max
       - name: Trigger Dev Deployment
