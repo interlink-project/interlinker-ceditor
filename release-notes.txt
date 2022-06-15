@@ -1,0 +1,6 @@
+NEW
+
+IMPROVED
+
+FIXED
+• Makefile: do not remove volumes on down
