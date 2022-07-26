@@ -105,7 +105,7 @@ async def delete_asset(id: str, collection: AsyncIOMotorCollection = Depends(get
     if (asset := await crud.get(collection, id)) is not None:
         delete_result = await crud.delete(collection, asset)
         if delete_result.deleted_count == 1:
-            return JSONResponse(status_code=status.HTTP_204_NO_CONTENT)
+            return HTTPException(status_code=status.HTTP_204_NO_CONTENT)
         return HTTPException(status_code=503, detail="Error while deleting")
 
     raise HTTPException(status_code=404, detail="Asset {id} not found")
